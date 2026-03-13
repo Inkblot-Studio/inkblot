@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+:root {
+	--inkblot-bg: #070b1b;
+	--inkblot-bg-soft: #0e1631;
+	--inkblot-cyan: #3bd9ff;
+	--inkblot-cyan-soft: #8aeaff;
+	--inkblot-text-soft: #b9c4e2;
+	--inkblot-card: rgba(19, 30, 62, 0.7);
+}
+
+@theme inline {
+	--color-inkblot: var(--inkblot-bg);
+	--color-inkblot-soft: var(--inkblot-bg-soft);
+	--color-inkblot-cyan: var(--inkblot-cyan);
+	--color-inkblot-cyan-soft: var(--inkblot-cyan-soft);
+	--color-inkblot-text-soft: var(--inkblot-text-soft);
+}
+
+html,
+body {
+	min-height: 100%;
+}
+
+body {
+	background:
+		radial-gradient(circle at 80% 10%, rgba(59, 217, 255, 0.18), transparent 35%),
+		radial-gradient(circle at 10% 20%, rgba(86, 103, 255, 0.22), transparent 30%),
+		var(--inkblot-bg);
+}
+
+.site-container {
+	margin: 0 auto;
+	width: min(1120px, 92vw);
+}
+
+.section-card {
+	border: 1px solid rgba(138, 234, 255, 0.22);
+	background: var(--inkblot-card);
+	backdrop-filter: blur(8px);
+}
+
+.muted {
+	color: var(--inkblot-text-soft);
+}
