@@ -10,6 +10,19 @@ export const leadSchema = z.object({
 	timeline: z.enum(['now', '1-2-months', '3-plus-months']),
 	role: z.enum(['owner-exec', 'ops-lead', 'manager', 'other']),
 	workEmail: z.email().max(200),
+	website: z.string().max(0).optional().default(''),
 });
 
 export type LeadPayload = z.infer<typeof leadSchema>;
+
+export const leadStatusSchema = z.enum(['new', 'qualified', 'needs_info', 'declined']);
+export type LeadStatus = z.infer<typeof leadStatusSchema>;
+
+export type LeadRecord = {
+	id: string;
+	payload: LeadPayload;
+	score: number;
+	status: LeadStatus;
+	createdAt: string;
+	updatedAt: string;
+};

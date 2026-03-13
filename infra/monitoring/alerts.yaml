@@ -1,0 +1,26 @@
+groups:
+  - name: inkblot-web-alerts
+    rules:
+      - alert: WebHighErrorRate
+        expr: sum(rate(http_server_errors_total[5m])) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: High server error rate on web app
+
+      - alert: LeadQueueLagHigh
+        expr: bullmq_waiting_jobs > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Lead queue lag is elevated
+
+      - alert: WorkerFailures
+        expr: increase(lead_worker_failures_total[10m]) > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Lead worker failures exceed threshold

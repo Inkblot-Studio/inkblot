@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import clsx from 'clsx';
 import { leadSchema } from '../lib/lead-schema';
+import { trackAnalyticsEvent } from '../lib/analytics/events';
 
 type FormState = {
 	companyName: string;
@@ -12,6 +13,15 @@ type FormState = {
 	timeline: 'now' | '1-2-months' | '3-plus-months';
 	role: 'owner-exec' | 'ops-lead' | 'manager' | 'other';
 	workEmail: string;
+	website: string;
+};
+
+type SubmitResponse = {
+	ok: boolean;
+	message?: string;
+	error?: string;
+	leadId?: string;
+	status?: 'new' | 'qualified' | 'needs_info' | 'declined';
 };
 
 const painOptions = [
@@ -32,6 +42,7 @@ const initialForm: FormState = {
 	timeline: '1-2-months',
 	role: 'ops-lead',
 	workEmail: '',
+	website: '',
 };
 
 export default function StrategyCallForm() {
@@ -39,6 +50,7 @@ export default function StrategyCallForm() {
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
+	const [trackedOpen, setTrackedOpen] = useState(false);
 
 	const canSubmit = useMemo(() => {
 		const validation = leadSchema.safeParse(form);
@@ -61,10 +73,20 @@ export default function StrategyCallForm() {
 		event.preventDefault();
 		setError(null);
 		setSuccess(null);
+		trackAnalyticsEvent({
+			name: 'lead_form_submit_attempt',
+			timestamp: new Date().toISOString(),
+			properties: { page: 'home' },
+		});
 
 		const validation = leadSchema.safeParse(form);
 		if (!validation.success) {
 			setError('Please complete all required fields before submitting.');
+			trackAnalyticsEvent({
+				name: 'lead_form_submit_error',
+				timestamp: new Date().toISOString(),
+				properties: { reason: 'validation' },
+			});
 			return;
 		}
 
@@ -76,24 +98,63 @@ export default function StrategyCallForm() {
 				body: JSON.stringify(validation.data),
 			});
 
-			const data = (await response.json()) as { ok: boolean; message?: string; error?: string };
+			const data = (await response.json()) as SubmitResponse;
 			if (!response.ok || !data.ok) {
 				setError(data.error ?? 'We could not submit your request. Please try again.');
+				trackAnalyticsEvent({
+					name: 'lead_form_submit_error',
+					timestamp: new Date().toISOString(),
+					properties: { reason: data.error ?? 'unknown', status: response.status },
+				});
 				return;
 			}
 
-			setSuccess(data.message ?? 'Submitted successfully.');
+			setSuccess(
+				data.leadId
+					? `${data.message ?? 'Submitted successfully.'} Reference: ${data.leadId}. Status: ${data.status ?? 'new'}`
+					: (data.message ?? 'Submitted successfully.'),
+			);
+			trackAnalyticsEvent({
+				name: 'lead_form_submit_success',
+				timestamp: new Date().toISOString(),
+				properties: { hasLeadId: Boolean(data.leadId) },
+			});
 			setForm(initialForm);
 		} catch {
 			setError('Network error. Please try again in a moment.');
+			trackAnalyticsEvent({
+				name: 'lead_form_submit_error',
+				timestamp: new Date().toISOString(),
+				properties: { reason: 'network' },
+			});
 		} finally {
 			setSubmitting(false);
 		}
 	}
 
 	return (
-		<form onSubmit={onSubmit} className="section-card mt-8 rounded-2xl p-6">
+		<form
+			onSubmit={onSubmit}
+			onFocus={() => {
+				if (trackedOpen) return;
+				setTrackedOpen(true);
+				trackAnalyticsEvent({
+					name: 'lead_form_open',
+					timestamp: new Date().toISOString(),
+					properties: { page: 'home' },
+				});
+			}}
+			className="section-card mt-8 rounded-2xl p-6"
+		>
 			<div className="grid gap-4 md:grid-cols-2">
+				<input
+					value={form.website}
+					onChange={(event) => setForm((current) => ({ ...current, website: event.target.value }))}
+					className="hidden"
+					tabIndex={-1}
+					autoComplete="off"
+					aria-hidden="true"
+				/>
 				<label className="text-sm">
 					Company Name
 					<input

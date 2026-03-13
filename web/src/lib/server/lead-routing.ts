@@ -1,34 +1,19 @@
-import type { LeadPayload } from '../lead-schema';
+import type { LeadRecord } from '../lead-schema';
+import { createCrmAdapter } from './crm/adapter-factory';
+import { insertLeadAudit } from './persistence/lead-repository';
 
 export type RoutingResult = {
 	accepted: boolean;
-	destination: 'none' | 'webhook';
+	destination: string;
 };
 
-/**
- * Manual-review friendly lead routing.
- * For v1 we route to an ops webhook (CRM or automation entrypoint).
- */
-export async function routeLeadForManualReview(lead: LeadPayload): Promise<RoutingResult> {
-	const webhookUrl = import.meta.env.LEAD_WEBHOOK_URL;
+export async function routeLeadForManualReview(record: LeadRecord): Promise<RoutingResult> {
+	const adapter = createCrmAdapter();
+	const result = await adapter.createLead(record);
+	await insertLeadAudit(record.id, `Lead routed to ${adapter.name}`);
 
-	if (!webhookUrl) {
-		return { accepted: true, destination: 'none' };
-	}
-
-	const response = await fetch(webhookUrl, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({
-			source: 'inkblot-web-v1',
-			receivedAt: new Date().toISOString(),
-			lead,
-		}),
-	});
-
-	if (!response.ok) {
-		throw new Error(`Lead webhook failed with status ${response.status}`);
-	}
-
-	return { accepted: true, destination: 'webhook' };
+	return {
+		accepted: true,
+		destination: result.destination,
+	};
 }
