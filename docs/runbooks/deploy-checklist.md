@@ -20,3 +20,6 @@
 - [ ] Verify lead end-to-end in prod
 - [ ] Confirm no active critical alerts
 - [ ] Runbook evidence captured (command outputs + timestamp + operator)
+- [ ] Verify immersive runtime chapter transitions in browser.
+- [ ] Verify adaptive quality downgrade event can be observed under load.
+- [ ] Verify optional experimental path flag (`?renderer=webgpu`) falls back safely when unsupported.

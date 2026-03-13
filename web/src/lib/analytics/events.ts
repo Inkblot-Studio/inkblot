@@ -3,6 +3,8 @@ export const analyticsEventNames = [
 	'lead_form_submit_attempt',
 	'lead_form_submit_success',
 	'lead_form_submit_error',
+	'immersive_world_chapter_change',
+	'immersive_world_quality_degrade',
 ] as const;
 
 export type AnalyticsEventName = (typeof analyticsEventNames)[number];

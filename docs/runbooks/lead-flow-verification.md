@@ -18,11 +18,15 @@
 4. Confirm audit entries:
    - `SELECT lead_id, message FROM lead_audit ORDER BY created_at DESC LIMIT 10;`
 5. Confirm queue consumption by worker logs.
+6. Validate immersive runtime controls in browser:
+   - default: `http://localhost:4321/`
+   - experimental flag: `http://localhost:4321/?renderer=webgpu`
 
 Expected output markers:
 - `API response: {"ok":true,...}`
 - `Latest leads:` table includes newly created ID
 - `Latest lead audit:` contains route completion message
+- Runtime overlay shows tier and renderer mode badge.
 
 ## Expected Status Lifecycle
 

@@ -10,6 +10,7 @@ SERVER_PID=$!
 
 cleanup() {
   kill "${SERVER_PID}" >/dev/null 2>&1 || true
+  wait "${SERVER_PID}" >/dev/null 2>&1 || true
   rm -f "${LOG_FILE}"
 }
 trap cleanup EXIT
