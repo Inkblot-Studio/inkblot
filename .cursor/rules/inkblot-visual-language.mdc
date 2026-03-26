@@ -1,0 +1,76 @@
+---
+description: Cinematic shell UX and visual language—nav, scroll thumb, audio, bloom experiences (aligns with user screen ref)
+globs: index.html,src/ui/**/*.ts,src/main.ts,src/systems/scrollSystem.ts,src/systems/audioSystem.ts,src/systems/animationSystem.ts
+alwaysApply: false
+---
+
+# Inkblot visual language & shell reference
+
+## Motion / layout reference (screen recording)
+
+- **Primary reference**: User screen recording **2026-03-26 ~16:25** (local `.mov` — not in repo). Use it for **timing, weight, and composition** when polishing.
+- **Optional captures**: Drop a few representative **PNG/JPEG frames** under `docs/reference/frames/` (create folder when needed) and name them by section (`nav-pill.png`, `scroll-edge.png`, etc.) so assistants can see pixels without video.
+
+When the recording and this doc disagree, **trust the recording for feel** and **update this doc** after changes.
+
+## Global aesthetic
+
+- **Base**: Near-black cinematic UI (`--background` ~`#020617`), high contrast type, restrained chrome.
+- **Accents**: Teal / cyan (`#22d3ee`, ice gradients) + soft violet in backlights (`#a78bfa` mixes) — “premium dark mode,” not flat corporate blue.
+- **3D / post** (bloom mode): Heavy but tasteful **bloom**, **subtle film grain** (`FilmPass`), **cool grade** — see `engines/citron-bloom/bloom-postprocess/citronBloomComposer.ts`.
+- **Typography**: **IBM Plex Mono** for HUD-style nav + mini player; **Outfit** (primary) + **Fraunces** italic (e.g. “Studio”) for brand wordmark; story panels use Outfit headings + body (`index.html`).
+
+## Top navigation pill (`index.html` + `src/ui/navChrome.ts`)
+
+- **Shape**: Horizontal **stadium pill**, matte dark fill, thin **cyan-tinted rim**, soft **radial backlight** behind center (`.nav-pill-backlight`).
+- **Placement**: Pill stack is **top-right** (`.nav-stack-top-right`, `margin-left: auto`); brand stays **top-left**. No hamburger — WORK / CONTACT always visible.
+- **Labels**: **Outfit** sans, **small** (~0.56rem), wide letter-spacing, uppercase; subtle grey pill border (not heavy cyan chrome).
+- **Scroll “wind”**: CSS vars `--nav-warp` [0,1], `--nav-dir` ±1 — drive **perspective + rotateX + skewX** on `.nav-pill-morph` from **scroll speed** (`ScrollSystem.velocityPxPerSec` in `scrollSystem.ts`, consumed in `updateNavChrome`). Transform origin **top-right** so bend feels anchored to the corner.
+- **Audio**: **No 3D HUD speaker** — toggle is **`#nav-audio-toggle`** wrapping the center flow SVG (`initNavChrome` → `audio.toggleAudio()`). `aria-pressed` synced in `updateNavChrome`.
+- **Center line**: SVG `#nav-flow-path` — **straight** when audio off; **multi-sine polyline** when on (`buildFlowPath` in `navChrome.ts`). Soft white/silver gradient.
+- **Mini player**: Shown only with **`body.audio-active`** (audio playing). Double-outline frame, `⟨⟨` / `⟩⟩`, track label from `AudioSystem.getCurrentTrackLabel()`; prev/next call `prevTrack` / `nextTrack`.
+
+## Custom scroll thumb (`index.html` + `updateCustomScrollThumb`)
+
+- **Native scrollbars**: Hidden on `html` / `body` (Firefox + WebKit).
+- **Placement**: Fixed **right edge**, `z-index: 14`, respects **safe-area**.
+- **Divider**: 1px **near-black** vertical line (`.custom-scroll-edge`) — thumb sits **on** the edge axis.
+- **Thumb**: ~**3px** wide, **pill** (`border-radius: 999px`), **off-white** (slight slate mix), **min height ~20px**, height ∝ viewport/document ratio (long page → shorter thumb), position from `scrollY / maxScroll`. Fade out when there is nothing to scroll.
+
+## Page shell vs 3D
+
+- **Canvas**: Fixed full-viewport, low z-index; **interaction layer** above for pointer.
+- **UI layer**: Mostly `pointer-events: none` with targeted `auto` on interactive nodes.
+- **Bloom story copy**: Scroll-synced DOM panels (`#bloom-story`, `--bloom-scroll`); hidden for `?experience=stomp` and non–bloom modes (`body` classes in `main.ts`).
+
+## Citron Bloom experiences (`engines/citron-bloom/bloom-runtime/`)
+
+- **Registry**: `BloomExperienceRegistry` — add scenes with `register(id, factory)` before bloom component init.
+- **Defaults**: `flower` (delicate camera, scroll bloom, optional **dual-scene** transition to `createBloomTransitionScene`) and `stomp` (showcase orbit, iridescent stomp, glass tiles, mist) — `?experience=stomp`.
+- **Dual transition**: Distortion + parallax blend in `dualSceneBlendPass.ts`; driven from `main.ts` with `smootherstep` on scroll — **only for `flower`**, not stomp.
+
+## Showcase / “Active Theory”–style scene (`bloom-showcase/`)
+
+- **Stomp**: Stacked iridescent tori, `MeshPhysicalMaterial` iridescence + clearcoat.
+- **Tiles**: Rounded extruded glass (`transmission`), optional `VideoTexture`, Troika titles; arc placement + `lookAt` center.
+- **Mist**: Additive particles purple ↔ cyan (`particleMist.ts`).
+- **Camera**: `AnimationSystem` **`showcaseOrbit`** — slow orbit around stomp height with pointer parallax.
+
+## Motion principles
+
+- Prefer **damped** motion (`InkblotCamera`, `ScrollSystem` progress, audio volumes) over snappy unless UI demands it.
+- **Scroll velocity** spikes UI reaction (nav warp); **smoothed progress** drives story and bloom.
+- Avoid fighting the reference: **one dominant focal point** (flower or stomp), **HUD reads over** the scene without clutter.
+
+## Files checklist (when matching the reference)
+
+| Area | Primary files |
+|------|----------------|
+| Nav + thumb + CSS vars | `index.html`, `src/ui/navChrome.ts` |
+| Scroll speed | `src/systems/scrollSystem.ts`, `src/main.ts` tick |
+| Audio + playlist | `src/systems/audioSystem.ts` |
+| Camera modes | `src/systems/animationSystem.ts` |
+| Bloom routing | `src/main.ts`, `src/components/citronBloomComponent.ts` |
+| Engine post | `engines/citron-bloom/bloom-postprocess/citronBloomComposer.ts` |
+
+See also [citron-bloom.mdc](citron-bloom.mdc) for engine-only LOD, phases, and palette tokens.

@@ -6,4 +6,6 @@ export * from './bloom-curves';
 export * from './bloom-flora';
 export * from './bloom-particles';
 export * from './bloom-postprocess';
+export * from './bloom-runtime';
+export * from './bloom-showcase';
 export * from './examples/createCitronBloomScene';

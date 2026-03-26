@@ -6,16 +6,27 @@ import { damp } from '@/utils/math';
  * Generates an ambient, cinematic drone using Web Audio API oscillators.
  * Exposes frequency data and a toggle method for 3D UI integration.
  */
+const DEFAULT_TRACKS = [
+  { label: '— DUSK 8.' },
+  { label: '— TIES 6. BXR' },
+  { label: '— GHOST 3.' },
+  { label: '— FIELD 2.' },
+] as const;
+
 export class AudioSystem implements ISystem {
   private audioCtx: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private oscillators: OscillatorNode[] = [];
+  private trackFilters: BiquadFilterNode[] = [];
   private masterGain: GainNode | null = null;
 
   private dataArray: Uint8Array | null = null;
   private initialized = false;
-  
+
   public isPlaying = false;
+
+  private readonly tracks = [...DEFAULT_TRACKS];
+  private trackIndex = 0;
 
   /** Smoothed overall volume level [0, 1] derived from low frequencies. */
   public lowFrequencyVolume = 0;
@@ -60,7 +71,7 @@ export class AudioSystem implements ISystem {
       const gain = this.audioCtx.createGain();
 
       osc.type = index % 2 === 0 ? 'sine' : 'triangle';
-      osc.frequency.value = freq + (Math.random() - 0.5) * 1.0; 
+      osc.frequency.value = freq + (Math.random() - 0.5) * 1.0;
 
       panner.pan.value = (Math.random() - 0.5) * 1.5;
 
@@ -77,9 +88,37 @@ export class AudioSystem implements ISystem {
 
       osc.start();
       this.oscillators.push(osc);
+      this.trackFilters.push(filter);
     });
 
     this.initialized = true;
+  }
+
+  getCurrentTrackLabel(): string {
+    return this.tracks[this.trackIndex]?.label ?? '—';
+  }
+
+  nextTrack(): void {
+    if (this.tracks.length === 0) return;
+    this.trackIndex = (this.trackIndex + 1) % this.tracks.length;
+    this.retuneDroneCharacter();
+  }
+
+  prevTrack(): void {
+    if (this.tracks.length === 0) return;
+    this.trackIndex = (this.trackIndex - 1 + this.tracks.length) % this.tracks.length;
+    this.retuneDroneCharacter();
+  }
+
+  /** Nudge lowpass per “track” so next/prev feels reactive with the procedural drone. */
+  private retuneDroneCharacter(): void {
+    if (!this.audioCtx || this.trackFilters.length === 0) return;
+    const t = this.trackIndex;
+    const now = this.audioCtx.currentTime;
+    this.trackFilters.forEach((f, i) => {
+      const base = 180 + (t % 4) * 55 + i * 40;
+      f.frequency.setTargetAtTime(base, now, 0.12);
+    });
   }
 
   public toggleAudio = async (): Promise<void> => {

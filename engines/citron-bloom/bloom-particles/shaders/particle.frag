@@ -1,8 +1,11 @@
 uniform vec3 uColorCore;
 uniform vec3 uColorEdge;
+uniform vec3 uForestCore;
+uniform vec3 uForestEdge;
 
 varying float vDepth;
 varying vec2 vRef;
+varying float vForest;
 
 void main() {
   vec2 c = gl_PointCoord - 0.5;
@@ -10,6 +13,9 @@ void main() {
   if (r > 1.0) discard;
   float soft = smoothstep(1.0, 0.2, r);
   float tw = sin(vRef.x * 40.0 + vRef.y * 40.0) * 0.5 + 0.5;
-  vec3 col = mix(uColorCore, uColorEdge, r * 0.85 + 0.15 * tw);
-  gl_FragColor = vec4(col, 0.35 * soft);
+  vec3 core = mix(uColorCore, uForestCore, vForest);
+  vec3 edge = mix(uColorEdge, uForestEdge, vForest);
+  vec3 col = mix(core, edge, r * 0.85 + 0.15 * tw);
+  float alpha = mix(0.35, 0.42, vForest);
+  gl_FragColor = vec4(col, alpha * soft);
 }

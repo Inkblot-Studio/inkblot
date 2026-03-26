@@ -68,7 +68,7 @@ export class InstancedMicroLeaves {
       const c = new Color().lerpColors(
         BloomTokens.citron500,
         BloomTokens.success,
-        0.35 + Math.random() * 0.5,
+        0.42 + Math.random() * 0.48,
       );
       colors[i * 4] = c.r;
       colors[i * 4 + 1] = c.g;

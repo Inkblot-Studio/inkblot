@@ -91,7 +91,7 @@ export class InkblotScene {
     this.instance.add(rimLight);
 
     // 3. Core Light — Intense, warm/greenish (#10B981) point light situated inside 
-    const coreLight = new PointLight(PALETTE.accent, 15.0, 15);
+    const coreLight = new PointLight(PALETTE.accent, 17.0, 16);
     coreLight.position.set(0, 0, 0); // Positioned at the origin, inside the flower
     this.instance.add(coreLight);
   }

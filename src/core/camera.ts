@@ -39,6 +39,10 @@ export class InkblotCamera {
   /** Smoothing factor — higher = snappier, lower = more cinematic. */
   private dampFactor = 3;
 
+  setDampFactor(value: number): void {
+    this.dampFactor = value;
+  }
+
   constructor(config: CameraConfig = {}) {
     const cfg = { ...DEFAULTS, ...config };
 

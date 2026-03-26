@@ -31,7 +31,7 @@ export function BloomHud({ onBloomMore, onBloomLess, title = 'Citron Bloom' }: B
     background: 'color-mix(in srgb, var(--surface) 92%, transparent)',
     border: '1px solid var(--border)',
     color: 'var(--text-primary)',
-    fontFamily: "'Montserrat', system-ui, sans-serif",
+    fontFamily: "'Outfit', system-ui, sans-serif",
     fontSize: '0.8125rem',
   };
 

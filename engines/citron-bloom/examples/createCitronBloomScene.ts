@@ -1,4 +1,3 @@
-import type { WebGLRenderer } from 'three';
 import { Group, Vector3 } from 'three';
 import { BLOOM_LOD_PROFILES, type BloomLod } from '../bloom-core/types';
 import { dnaHelixPoints, catmullFromPoints } from '../bloom-curves/curveUtils';
@@ -6,24 +5,21 @@ import { createDnaSpineMesh, disposeDnaSpine, updateDnaSpineTime } from '../bloo
 import { InstancedMicroLeaves } from '../bloom-core/instancedMicroLeaves';
 import { BloomPhaseController } from '../bloom-flora/bloomPhase';
 import { FloralAssembly } from '../bloom-flora/floralAssembly';
-import { GpgpuParticles } from '../bloom-particles/gpgpuParticles';
 
 export interface CreateCitronBloomSceneOptions {
   lod?: BloomLod;
-  renderer: WebGLRenderer;
 }
 
 export interface CitronBloomSceneHandle {
   readonly root: Group;
   update(delta: number, elapsed: number): void;
-  setPointerWorld(x: number, z: number): void;
   /** Drive flower opening: 0 = buds, 1 = full bloom (smoothly animated). */
   setBloomTarget(main: number, branch?: number, bud?: number): void;
   dispose(): void;
 }
 
 /**
- * Wires DNA spines, micro-leaves, multi-head floral assembly, and GPGPU particles.
+ * Wires DNA spines, micro-leaves, and multi-head floral assembly (no floating dust particles).
  * Add `root` to your scene; tick `update` each frame.
  */
 export function createCitronBloomScene(options: CreateCitronBloomSceneOptions): CitronBloomSceneHandle {
@@ -64,25 +60,20 @@ export function createCitronBloomScene(options: CreateCitronBloomSceneOptions): 
   const leaves = new InstancedMicroLeaves({
     count: profile.microLeafInstances,
     curve: leafCurve,
-    wind: 1,
+    wind: 0.72,
   });
   root.add(leaves.mesh);
 
-  // Slower follow = languid, graceful bloom when driven by scroll or external targets.
-  const phaseMain = new BloomPhaseController({ smoothSpeed: 0.52, pulseSpeed: 0.55 });
-  const phaseBranch = new BloomPhaseController({ smoothSpeed: 0.48, pulseSpeed: 0.5 });
-  const phaseBud = new BloomPhaseController({ smoothSpeed: 0.42, pulseSpeed: 0.45 });
+  // Very slow follow — scroll-mapped bloom feels languid and continuous.
+  const phaseMain = new BloomPhaseController({ smoothSpeed: 0.15, pulseSpeed: 0.38 });
+  const phaseBranch = new BloomPhaseController({ smoothSpeed: 0.14, pulseSpeed: 0.34 });
+  const phaseBud = new BloomPhaseController({ smoothSpeed: 0.13, pulseSpeed: 0.32 });
   phaseMain.snapTo(0);
   phaseBranch.snapTo(0);
   phaseBud.snapTo(0);
 
   const floral = new FloralAssembly({ profile }, [phaseMain, phaseBranch, phaseBud]);
   root.add(floral);
-
-  const particles = new GpgpuParticles(options.renderer, {
-    textureSize: profile.particleTexSize,
-  });
-  root.add(particles.points);
 
   const wind = { value: 1 };
 
@@ -97,10 +88,6 @@ export function createCitronBloomScene(options: CreateCitronBloomSceneOptions): 
       updateDnaSpineTime(spineA, elapsed, wind.value);
       updateDnaSpineTime(spineB, elapsed, wind.value);
       leaves.update(elapsed);
-      particles.update(elapsed);
-    },
-    setPointerWorld(x: number, z: number) {
-      particles.setPointerWorld(x, z);
     },
     setBloomTarget(main: number, branch = main * 0.85, bud = main * 0.4) {
       phaseMain.setTarget(main);
@@ -112,7 +99,6 @@ export function createCitronBloomScene(options: CreateCitronBloomSceneOptions): 
       disposeDnaSpine(spineB);
       leaves.dispose();
       floral.dispose();
-      particles.dispose();
       root.removeFromParent();
     },
   };

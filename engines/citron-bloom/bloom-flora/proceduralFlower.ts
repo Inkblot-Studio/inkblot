@@ -62,9 +62,10 @@ export class ProceduralFlower extends Group {
         uBloom: { value: 0 },
         uPulse: { value: 0 },
         uWind: { value: 1 },
-        uRimColor: { value: BloomTokens.citron300.clone() },
-        uDeepColor: { value: BloomTokens.citron700.clone() },
-        uRimPower: { value: 2.0 },
+        uRimColor: { value: BloomTokens.citron300.clone().lerp(new Color(0xffffff), 0.35) },
+        uDeepColor: { value: BloomTokens.citron700.clone().lerp(new Color(0x0a1628), 0.5) },
+        uRimPower: { value: 2.35 },
+        uAccentGlow: { value: BloomTokens.success.clone().lerp(BloomTokens.citron300, 0.25) },
       },
       transparent: true,
       depthWrite: true,
@@ -128,13 +129,16 @@ export class ProceduralFlower extends Group {
         uniform vec3 uColor;
         varying float vGlow;
         void main() {
-          gl_FragColor = vec4(uColor * (0.85 + 0.35 * vGlow), 0.55);
+          float a = 0.42 + 0.28 * vGlow;
+          vec3 c = uColor * (0.75 + 0.45 * vGlow);
+          c += vec3(0.25, 0.45, 0.65) * pow(vGlow, 3.0) * 0.35;
+          gl_FragColor = vec4(c, a);
         }
       `,
       uniforms: {
         uTime: { value: 0 },
         uBloom: { value: 0 },
-        uColor: { value: BloomTokens.citron300.clone() },
+        uColor: { value: BloomTokens.success.clone().lerp(BloomTokens.citron300, 0.35) },
       },
       transparent: true,
       depthWrite: false,

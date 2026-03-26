@@ -1,37 +1,35 @@
-import { Group, MeshStandardMaterial, Color } from 'three';
+import { Group, MeshStandardMaterial, Vector3 } from 'three';
 import { Text } from 'troika-three-text';
 import { damp } from '@/utils/math';
-import { PALETTE, COLORS } from '@/utils/colors';
+import { COLORS } from '@/utils/colors';
 import type { FrameContext, IComponent } from '@/types';
 
 interface SectionConfig {
   title: string;
   body: string;
   position: [number, number, number];
-  rotationY: number;
-  triggerRange: [number, number]; // scroll progress start/end for full visibility
+  triggerRange: [number, number];
 }
 
 export class Sections3DComponent implements IComponent {
   private group = new Group();
-  private sections: { container: Group; textGroup: Group; triggerRange: [number, number]; targetOpacity: number }[] = [];
-  
-  private scrollProgress = 0;
+  private sections: {
+    container: Group;
+    textGroup: Group;
+    triggerRange: [number, number];
+    targetOpacity: number;
+  }[] = [];
 
-  // Orbit radius
+  private scrollProgress = 0;
   private readonly radius = 4.5;
+  private readonly worldPos = new Vector3();
 
   init(ctx: FrameContext): void {
     const configs: SectionConfig[] = [
       {
         title: 'ENGINEERING\nMOMENTUM',
         body: 'Inkblot Studio is a premier AI company dedicated to moving the needle for every industry.\nWe redefine how businesses operate with proprietary frameworks.',
-        position: [
-          Math.sin(0) * this.radius,
-          0.5,
-          Math.cos(0) * this.radius
-        ],
-        rotationY: 0,
+        position: [Math.sin(0) * this.radius, 0.5, Math.cos(0) * this.radius],
         triggerRange: [0.1, 0.3],
       },
       {
@@ -40,9 +38,8 @@ export class Sections3DComponent implements IComponent {
         position: [
           Math.sin(Math.PI * 0.4) * this.radius,
           -0.5,
-          Math.cos(Math.PI * 0.4) * this.radius
+          Math.cos(Math.PI * 0.4) * this.radius,
         ],
-        rotationY: Math.PI * 0.4,
         triggerRange: [0.3, 0.5],
       },
       {
@@ -51,9 +48,8 @@ export class Sections3DComponent implements IComponent {
         position: [
           Math.sin(Math.PI * 0.8) * this.radius,
           0.8,
-          Math.cos(Math.PI * 0.8) * this.radius
+          Math.cos(Math.PI * 0.8) * this.radius,
         ],
-        rotationY: Math.PI * 0.8,
         triggerRange: [0.5, 0.7],
       },
       {
@@ -62,23 +58,18 @@ export class Sections3DComponent implements IComponent {
         position: [
           Math.sin(Math.PI * 1.2) * this.radius,
           -0.2,
-          Math.cos(Math.PI * 1.2) * this.radius
+          Math.cos(Math.PI * 1.2) * this.radius,
         ],
-        rotationY: Math.PI * 1.2,
         triggerRange: [0.7, 0.9],
-      }
+      },
     ];
 
     for (const conf of configs) {
       const container = new Group();
       container.position.set(...conf.position);
-      // We want the text to face the camera, but roughly rotate outwards from the center.
-      // So rotationY is the angle + PI so it faces out.
-      container.rotation.y = conf.rotationY + Math.PI;
 
       const titleMesh = new Text();
       titleMesh.text = conf.title;
-      // titleMesh.font = 'https://fonts.gstatic.com/s/cinzel/v19/8vIX7kw6OSWKfITRGYs.woff'; // Cinzel regular
       titleMesh.fontSize = 0.5;
       titleMesh.position.y = 0.8;
       titleMesh.color = COLORS.primaryHover;
@@ -93,13 +84,12 @@ export class Sections3DComponent implements IComponent {
 
       const bodyMesh = new Text();
       bodyMesh.text = conf.body;
-      // bodyMesh.font = 'https://fonts.gstatic.com/s/montserrat/v25/JTUSjIg1_i6t8kCHKm459Wlhyw.woff2'; // Montserrat regular
       bodyMesh.fontSize = 0.15;
       bodyMesh.position.y = 0.0;
       bodyMesh.lineHeight = 1.6;
-      bodyMesh.color = 0xffffff;
+      bodyMesh.color = COLORS.textPrimary.getHex();
       bodyMesh.material = new MeshStandardMaterial({
-        color: 0xffffff,
+        color: COLORS.textPrimary,
         transparent: true,
         opacity: 0,
       });
@@ -110,8 +100,6 @@ export class Sections3DComponent implements IComponent {
       const textGroup = new Group();
       textGroup.add(titleMesh);
       textGroup.add(bodyMesh);
-
-      // Start text lower down for floating reveal
       textGroup.position.y = -1.0;
 
       container.add(textGroup);
@@ -121,7 +109,7 @@ export class Sections3DComponent implements IComponent {
         container,
         textGroup,
         triggerRange: conf.triggerRange,
-        targetOpacity: 0
+        targetOpacity: 0,
       });
     }
 
@@ -133,41 +121,48 @@ export class Sections3DComponent implements IComponent {
   }
 
   update(ctx: FrameContext): void {
+    const cam = ctx.camera.position;
+
     for (const section of this.sections) {
+      section.container.getWorldPosition(this.worldPos);
+      const dx = cam.x - this.worldPos.x;
+      const dz = cam.z - this.worldPos.z;
+      section.container.rotation.order = 'YXZ';
+      section.container.rotation.x = 0;
+      section.container.rotation.z = 0;
+      section.container.rotation.y = Math.atan2(dx, dz);
+
       const [start, end] = section.triggerRange;
       const center = (start + end) / 2;
       const range = (end - start) / 2;
-      
-      // Calculate distance from center of range
+
       const dist = Math.abs(this.scrollProgress - center);
-      
+
       if (dist < range) {
         section.targetOpacity = 1.0;
-      } else if (dist < range + 0.1) {
-        // Fade in/out zone
-        section.targetOpacity = 1.0 - ((dist - range) / 0.1);
+      } else if (dist < range + 0.12) {
+        section.targetOpacity = 1.0 - (dist - range) / 0.12;
       } else {
         section.targetOpacity = 0.0;
       }
 
-      // Animate text elements (Opacities & Y position float)
-      section.textGroup.children.forEach(child => {
-        if ((child as any).material) {
-          const mat = (child as any).material;
-          mat.opacity = damp(mat.opacity, section.targetOpacity, 8, ctx.delta);
+      section.textGroup.children.forEach((child) => {
+        const textChild = child as Text;
+        const mat = textChild.material as MeshStandardMaterial | undefined;
+        if (mat) {
+          mat.opacity = damp(mat.opacity, section.targetOpacity, 5.2, ctx.delta);
         }
       });
 
-      // Float upwards as it appears
       const targetY = section.targetOpacity > 0.1 ? 0 : -1.0;
-      section.textGroup.position.y = damp(section.textGroup.position.y, targetY, 4, ctx.delta);
+      section.textGroup.position.y = damp(section.textGroup.position.y, targetY, 3.0, ctx.delta);
     }
   }
 
   dispose(): void {
-    this.sections.forEach(s => {
-      s.textGroup.children.forEach(c => {
-        if ((c as any).dispose) (c as any).dispose();
+    this.sections.forEach((s) => {
+      s.textGroup.children.forEach((c) => {
+        (c as Text).dispose?.();
       });
     });
     this.group.removeFromParent();

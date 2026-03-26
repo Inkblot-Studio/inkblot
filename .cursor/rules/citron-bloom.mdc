@@ -1,0 +1,60 @@
+---
+description: Citron Bloom engine, scroll-to-bloom, delicate camera, and Inkblot integration
+globs: engines/citron-bloom/**/*.{ts,tsx},src/main.ts,src/components/citronBloomComponent.ts,src/systems/animationSystem.ts,src/components/sections3D.ts
+alwaysApply: false
+---
+
+# Citron Bloom + Inkblot integration
+
+## Modes
+
+- **Dev default**: Citron Bloom (`import.meta.env.DEV` without `?fluid`).
+- **`?fluid`**: Raymarched fluid flower + **orbit** camera (`AnimationSystem` `orbit` mode).
+- **Production**: Bloom only with `?citronBloom` (`=medium` | `low` for LOD).
+
+`parseCitronBloomMode()` lives in [`src/main.ts`](src/main.ts).
+
+## Engine layout (`engines/citron-bloom/`)
+
+| Folder | Role |
+|--------|------|
+| `bloom-core` | `palette.ts`, `tokens.ts`, LOD `types.ts`, instanced leaves |
+| `bloom-curves` | DNA / stem tubes + shaders |
+| `bloom-flora` | `ProceduralFlower`, `FloralAssembly`, `BloomPhaseController` |
+| `bloom-particles` | GPGPU points |
+| `bloom-postprocess` | `CitronBloomComposer` (bloom, glow, grade, `FilmPass`) |
+| `bloom-ui` | React HUD (optional) |
+
+Path alias: `@citron-bloom-engine` → `engines/citron-bloom`.
+
+## Scroll → bloom
+
+- [`ScrollSystem`](src/systems/scrollSystem.ts) damps `progress` [0,1]; virtual scroll height in [`index.html`](index.html) (`#virtual-scroll-space`).
+- Tick order in [`main.ts`](src/main.ts): `scrollSystem` → `interactionSystem` → `setScrollProgress` + `animationSystem` → `audioSystem`, then `citronBloomComponent.setBloomFromScroll`, then components.
+- Easing: [`CitronBloomComponent.setBloomFromScroll`](src/components/citronBloomComponent.ts); phase smoothing: [`createCitronBloomScene`](engines/citron-bloom/examples/createCitronBloomScene.ts) `BloomPhaseController` `smoothSpeed`.
+
+## Camera
+
+- [`AnimationSystem`](src/systems/animationSystem.ts): `CameraMotionMode` **`orbit`** (fluid) vs **`delicate`** (bloom: fixed framing, micro drift, pointer parallax).
+- [`InkblotCamera.setDampFactor`](src/core/camera.ts) is lowered (~2.25) in bloom mode.
+- [`InkblotControls`](src/core/controls.ts): `OrbitControls` **disabled** by default.
+
+## 3D UI text
+
+- [`Sections3DComponent`](src/components/sections3D.ts): Troika `Text` on a ring; **Y-axis billboard** each frame (`atan2` toward camera) so copy stays screen-parallel.
+
+## Palette
+
+- App: [`src/utils/colors.ts`](src/utils/colors.ts) `PALETTE` / `COLORS`.
+- Engine meshes: [`engines/citron-bloom/bloom-core/palette.ts`](engines/citron-bloom/bloom-core/palette.ts) + [`tokens.ts`](engines/citron-bloom/bloom-core/tokens.ts) `BloomTokens`.
+
+## Tuning
+
+- **LOD**: `BLOOM_LOD_PROFILES` in [`bloom-core/types.ts`](engines/citron-bloom/bloom-core/types.ts).
+- **Post (bloom mode)**: `CitronBloomComposer` constructor options in [`main.ts`](src/main.ts) + defaults in [`citronBloomComposer.ts`](engines/citron-bloom/bloom-postprocess/citronBloomComposer.ts).
+
+When changing bloom timing, coordinate **scroll mapping**, **phase `smoothSpeed`**, and **virtual scroll height** together.
+
+## Related
+
+- Shell UX, nav pill, scroll thumb, audio mini player, and cross-scene visual targets: [inkblot-visual-language.mdc](inkblot-visual-language.mdc).

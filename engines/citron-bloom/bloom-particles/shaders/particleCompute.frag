@@ -2,6 +2,10 @@ uniform float uTime;
 uniform vec3 uAttract;
 uniform vec2 uPointer;
 uniform float uPointerStrength;
+uniform sampler2D uTreeData;
+uniform float uTreeCount;
+uniform float uCanopyHeight;
+uniform float uForestAttract;
 
 vec3 hash3(vec3 p) {
   p = vec3(dot(p, vec3(127.1, 311.7, 74.7)), dot(p, vec3(269.5, 183.3, 246.1)), dot(p, vec3(113.5, 271.9, 124.6)));
@@ -41,21 +45,43 @@ void main() {
   vec2 vUv = gl_FragCoord.xy / resolution.xy;
   vec4 s = texture2D(texturePosition, vUv);
   vec3 p = s.xyz;
+  float kind = s.a;
 
-  vec3 toA = uAttract - p;
-  float dA = length(toA) + 0.1;
-  vec3 attract = normalize(toA) * (0.028 / (dA * dA));
+  vec3 attract;
+  if (kind < 0.1) {
+    vec3 toA = uAttract - p;
+    float dA = length(toA) + 0.12;
+    attract = normalize(toA) * (0.044 / (dA * dA));
+  } else {
+    float n = max(uTreeCount, 1.0);
+    float tid = floor(clamp((kind - 0.1) / 0.9 * n, 0.0, n - 1.0));
+    vec2 tuv = vec2((tid + 0.5) / n, 0.5);
+    vec3 treeBase = texture2D(uTreeData, tuv).xyz;
+    vec3 canopy = treeBase + vec3(0.0, uCanopyHeight, 0.0);
+    vec3 toC = canopy - p;
+    float dC = length(toC) + 0.12;
+    attract = normalize(toC) * (uForestAttract / (dC * dC));
+    attract += vec3(0.0, 0.014, 0.0);
+  }
 
   vec3 repel = vec3(0.0);
   vec2 delta = p.xz - uPointer;
   float dP = length(delta) + 0.15;
   if (dP < 1.35) {
-    repel = vec3(-delta.x, 0.12, -delta.y) * (uPointerStrength / (dP * dP));
+    float repelScale = kind < 0.1 ? 0.42 : 1.0;
+    repel = vec3(-delta.x, 0.12, -delta.y) * (uPointerStrength * repelScale / (dP * dP));
   }
 
-  vec3 flow = curlNoise(p * 0.55 + uTime * 0.14) * 0.052;
-  p += attract + repel + flow;
-  p *= 0.999;
+  vec3 flow = curlNoise(p * 0.55 + uTime * 0.14);
+  if (kind < 0.1) {
+    flow *= 0.014;
+    p += attract + repel + flow;
+    p *= 0.99978;
+  } else {
+    flow *= 0.048;
+    p += attract + repel + flow;
+    p *= 0.999;
+  }
 
-  gl_FragColor = vec4(p, 1.0);
+  gl_FragColor = vec4(p, kind);
 }

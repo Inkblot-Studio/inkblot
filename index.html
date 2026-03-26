@@ -6,9 +6,10 @@
     <title>Inkblot Studio | Cinematic Visual Experience</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
       :root {
+        --scroll-raw: 0;
         --dominant: #2563EB;
         --support: #60A5FA;
         --primary: #2563EB;
@@ -27,14 +28,79 @@
         box-sizing: border-box;
       }
 
-      html, body {
+      /* min-height (not height:100%) so in-flow #virtual-scroll-space can grow document scroll range */
+      html {
         width: 100%;
-        height: 100%;
+        min-height: 100%;
+      }
+
+      body {
+        width: 100%;
+        min-height: 100vh;
+        min-height: 100dvh;
         background: var(--background);
         color: var(--text-primary);
-        font-family: 'Montserrat', sans-serif;
+        font-family: 'Outfit', system-ui, sans-serif;
         overflow-x: hidden;
         overflow-y: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+
+      html::-webkit-scrollbar,
+      body::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
+      }
+
+      /* Vertical pill thumb on the viewport edge (replaces native bar). */
+      .custom-scroll-rail {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 10px;
+        height: 100dvh;
+        max-height: 100vh;
+        z-index: 14;
+        pointer-events: none;
+        padding: max(12px, env(safe-area-inset-top))
+          max(5px, env(safe-area-inset-right))
+          max(12px, env(safe-area-inset-bottom))
+          0;
+        box-sizing: border-box;
+      }
+
+      .custom-scroll-track {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+
+      .custom-scroll-edge {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        margin-left: -0.5px;
+        background: rgba(0, 0, 0, 0.88);
+        pointer-events: none;
+      }
+
+      .custom-scroll-thumb {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        width: 3px;
+        margin-left: -1.5px;
+        border-radius: 999px;
+        background: color-mix(in srgb, #e8eaef 92%, #94a3b8);
+        min-height: 20px;
+        transform: translateY(0);
+        will-change: transform, height;
+        opacity: 0;
+        transition: opacity 0.25s ease;
       }
 
       /* 3D Canvas fixed in background */
@@ -61,18 +127,6 @@
         pointer-events: auto;
       }
 
-      /* Citron Bloom engine HUD (React + Citron UI) */
-      #citron-bloom-hud {
-        position: fixed;
-        inset: 0;
-        z-index: 25;
-        pointer-events: none;
-      }
-
-      #citron-bloom-hud > * {
-        pointer-events: auto;
-      }
-
       /* UI Overlay on top */
       #ui-layer {
         position: fixed;
@@ -81,114 +135,842 @@
         pointer-events: none;
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
-        padding: 2rem;
+        justify-content: flex-start;
+        padding: max(0.85rem, env(safe-area-inset-top))
+          max(1.1rem, env(safe-area-inset-right))
+          1.5rem
+          max(1.1rem, env(safe-area-inset-left));
       }
 
-      /* Navbar */
-      header {
+      .top-chrome {
         display: flex;
+        flex-wrap: nowrap;
+        align-items: flex-start;
         justify-content: space-between;
+        gap: 1rem;
+        width: 100%;
+        pointer-events: none;
+      }
+
+      .brand-row {
+        display: flex;
         align-items: center;
+        gap: 0.75rem;
+        text-decoration: none;
+        color: inherit;
+        pointer-events: auto;
+        padding: 0.35rem 0;
+      }
+
+      .brand-row img {
+        height: 28px;
+        width: auto;
+        opacity: 0.92;
+      }
+
+      .brand-row .logo-text {
+        display: flex;
+        align-items: baseline;
+        gap: 0.25rem;
+      }
+
+      .brand-row .inkblot {
+        font-family: 'Outfit', system-ui, sans-serif;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        font-size: 1.15rem;
+        text-transform: uppercase;
+      }
+
+      .brand-row .studio {
+        font-family: 'Fraunces', Georgia, serif;
+        font-style: normal;
+        font-weight: 300;
+        letter-spacing: 0.1em;
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        opacity: 0.78;
+      }
+
+      .brand-row .tm {
+        font-size: 0.55rem;
+        opacity: 0.45;
+        transform: translateY(-0.35rem);
+      }
+
+      .nav-stack-top-right {
+        flex: 0 0 auto;
+        margin-left: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        pointer-events: none;
+        position: relative;
+        overflow: visible;
+      }
+
+      /* Subtle vertical “data rain” behind the pill (very low contrast). */
+      .nav-stack-top-right::before {
+        content: '';
+        position: absolute;
+        right: -12px;
+        top: -28px;
+        width: min(100vw, 340px);
+        height: 160px;
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.11;
+        background-image: repeating-linear-gradient(
+          90deg,
+          transparent 0,
+          transparent 13px,
+          color-mix(in srgb, #7fc7af 55%, transparent) 13px,
+          color-mix(in srgb, #7fc7af 55%, transparent) 14px
+        );
+        background-size: 100% 100%;
+        mask-image: radial-gradient(
+          ellipse 75% 85% at 62% 42%,
+          #000 0%,
+          transparent 68%
+        );
+        animation: nav-pill-rain 14s linear infinite;
+      }
+
+      @keyframes nav-pill-rain {
+        from {
+          background-position: 0 0;
+          opacity: 0.09;
+        }
+        50% {
+          opacity: 0.14;
+        }
+        to {
+          background-position: 0 48px;
+          opacity: 0.09;
+        }
+      }
+
+      /* Mint/teal under-glow: strongest along the bottom edge, like a light strip. */
+      .nav-pill-backlight {
+        position: absolute;
+        right: 50%;
+        bottom: -6px;
+        top: auto;
+        transform: translateX(50%);
+        width: min(135%, 400px);
+        height: 76px;
+        background: radial-gradient(
+          ellipse 92% 95% at 50% 100%,
+          color-mix(in srgb, #7fc7af 58%, transparent) 0%,
+          color-mix(in srgb, #5eead4 28%, transparent) 32%,
+          color-mix(in srgb, #0d9488 8%, transparent) 52%,
+          transparent 72%
+        );
+        filter: blur(24px);
+        opacity: 0.68;
+        pointer-events: none;
+        z-index: 0;
+        animation: nav-pill-glow-pulse 4.8s ease-in-out infinite;
+      }
+
+      @keyframes nav-pill-glow-pulse {
+        0%,
+        100% {
+          opacity: 0.5;
+          filter: blur(24px);
+        }
+        50% {
+          opacity: 0.82;
+          filter: blur(28px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .nav-pill-backlight,
+        .nav-stack-top-right::before {
+          animation: none;
+        }
+
+        .nav-pill-backlight {
+          opacity: 0.62;
+          filter: blur(22px);
+        }
+
+        .nav-stack-top-right::before {
+          opacity: 0.1;
+        }
+      }
+
+      .nav-pill-morph {
+        position: relative;
+        z-index: 2;
+        width: auto;
+        max-width: min(92vw, 300px);
+        transform-origin: 100% 0%;
+        transform:
+          perspective(880px)
+          rotateX(calc(-1deg - var(--nav-warp, 0) * 6.5deg))
+          skewX(calc(var(--nav-warp, 0) * 7deg * var(--nav-dir, 1)));
+        transition: transform 0.14s ease-out;
+        pointer-events: none;
+      }
+
+      .nav-pill-morph > * {
         pointer-events: auto;
       }
 
-      .logo-container {
+      .nav-pill-at {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        justify-content: space-between;
+        gap: 0.35rem 0.5rem;
+        padding: 0.38rem 0.85rem;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, #7fc7af 22%, #334155 55%);
+        background: color-mix(in srgb, #030712 88%, transparent);
+        box-shadow:
+          0 0 0 1px color-mix(in srgb, #5eead4 14%, transparent),
+          0 0 28px color-mix(in srgb, #7fc7af 22%, transparent),
+          0 14px 40px color-mix(in srgb, #000 58%, transparent),
+          inset 0 1px 0 color-mix(in srgb, #fff 4%, transparent);
+        -webkit-backdrop-filter: blur(18px);
+        backdrop-filter: blur(18px);
       }
 
-      .logo-container img {
-        height: 32px;
-        width: auto;
-      }
-
-      .logo-text {
-        display: flex;
-        align-items: baseline;
-        gap: 0.3rem;
-      }
-
-      .logo-text .inkblot {
-        font-family: 'Cinzel', serif;
-        font-weight: 600;
-        letter-spacing: 0.05em;
-        font-size: 1.4rem;
+      .nav-pill-link {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.54rem;
+        font-weight: 500;
+        letter-spacing: 0.22em;
         text-transform: uppercase;
-      }
-
-      .logo-text .studio {
-        font-family: 'Montserrat', sans-serif;
-        font-weight: 300;
-        letter-spacing: 0.1em;
-        font-size: 1.0rem;
-        text-transform: uppercase;
-        opacity: 0.8;
-      }
-
-      .logo-text .tm {
-        font-family: 'Montserrat', sans-serif;
-        font-size: 0.6rem;
-        opacity: 0.5;
-        transform: translateY(-0.5rem);
-      }
-
-      /* Desktop Nav */
-      nav {
-        display: flex;
-        gap: 2.5rem;
-      }
-
-      nav a {
-        color: var(--text-primary);
+        color: color-mix(in srgb, var(--text-primary) 90%, #cbd5e1);
         text-decoration: none;
-        font-size: 0.85rem;
-        font-weight: 400;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        opacity: 0.6;
-        transition: opacity 0.3s ease, color 0.3s ease;
+        white-space: nowrap;
+        opacity: 0.88;
+        transition: opacity 0.25s ease, color 0.25s ease, text-shadow 0.25s ease;
       }
 
-      nav a:hover {
+      .nav-pill-link:hover {
         opacity: 1;
-        color: var(--support);
+        color: #f8fafc;
+        text-shadow: 0 0 14px color-mix(in srgb, #e2e8f0 35%, transparent);
       }
 
-      /* Mobile Nav Toggle */
-      .menu-toggle {
-        display: none;
-        flex-direction: column;
-        gap: 4px;
-        background: none;
+      .nav-flow-hit {
+        flex: 1 1 56px;
+        max-width: 118px;
+        min-width: 44px;
+        height: 26px;
+        margin: 0;
         border: none;
+        padding: 0;
+        background: transparent;
         cursor: pointer;
-        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        pointer-events: auto;
+        -webkit-tap-highlight-color: transparent;
       }
 
-      .menu-toggle span {
-        width: 24px;
-        height: 2px;
-        background-color: var(--text-primary);
-        transition: 0.3s;
+      .nav-flow-hit:hover {
+        background: color-mix(in srgb, #fff 5%, transparent);
+      }
+
+      .nav-flow-hit:focus-visible {
+        outline: 1px solid color-mix(in srgb, #94a3b8 70%, transparent);
+        outline-offset: 2px;
+      }
+
+      .nav-flow-wrap {
+        width: 100%;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+      }
+
+      .nav-flow-svg {
+        width: 100%;
+        height: 22px;
+        overflow: visible;
+      }
+
+      .nav-flow-svg path {
+        fill: none;
+        stroke: url(#nav-flow-grad);
+        stroke-width: 1.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        filter: drop-shadow(0 0 6px color-mix(in srgb, #f1f5f9 45%, transparent));
+      }
+
+      .nav-mini-player {
+        margin-top: 0.45rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.65rem;
+        padding: 0.38rem 0.65rem;
+        border-radius: 10px;
+        border: 1px solid color-mix(in srgb, #fff 22%, transparent);
+        outline: 1px solid color-mix(in srgb, #fff 10%, transparent);
+        outline-offset: 2px;
+        background: color-mix(in srgb, #020617 72%, transparent);
+        opacity: 0;
+        transform: translateY(-8px) scale(0.98);
+        max-height: 0;
+        margin-top: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        overflow: hidden;
+        pointer-events: none;
+        transition:
+          opacity 0.4s ease,
+          transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+          max-height 0.45s ease,
+          margin-top 0.45s ease,
+          padding 0.45s ease;
+      }
+
+      body.audio-active .nav-mini-player {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        max-height: 56px;
+        margin-top: 0.45rem;
+        padding: 0.38rem 0.65rem;
+        pointer-events: auto;
+      }
+
+      .nav-mini-btn {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.62rem;
+        width: 1.65rem;
+        height: 1.65rem;
+        display: grid;
+        place-items: center;
+        border: 1px solid color-mix(in srgb, #fff 28%, transparent);
+        border-radius: 4px;
+        background: transparent;
+        color: var(--text-primary);
+        cursor: pointer;
+        line-height: 1;
+        transition: border-color 0.2s ease, background 0.2s ease;
+      }
+
+      .nav-mini-btn:hover {
+        border-color: color-mix(in srgb, #22d3ee 55%, #fff);
+        background: color-mix(in srgb, #22d3ee 12%, transparent);
+      }
+
+      .nav-mini-meta {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.54rem;
+        letter-spacing: 0.14em;
+        color: color-mix(in srgb, var(--text-primary) 85%, #cbd5e1);
+        white-space: nowrap;
+        max-width: 10rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       /* Virtual scroll */
+      /* In-flow spacer so scrollHeight reflects the full journey (absolute children often don't). */
       #virtual-scroll-space {
-        position: absolute;
-        top: 0;
-        left: 0;
+        display: block;
         width: 1px;
-        height: 500vh;
+        height: 850vh;
         pointer-events: none;
-        z-index: 0;
       }
 
       @media (max-width: 768px) {
-        #ui-layer { padding: 1.5rem; }
-        nav { display: none; }
-        .menu-toggle { display: flex; }
+        #ui-layer {
+          padding: max(0.75rem, env(safe-area-inset-top)) 0.85rem 1rem;
+        }
+        .top-chrome {
+          flex-wrap: wrap;
+        }
+        .nav-stack-top-right {
+          width: 100%;
+          align-items: flex-end;
+        }
+        .nav-pill-morph {
+          max-width: min(100%, 280px);
+        }
+        .nav-pill-at {
+          padding: 0.34rem 0.72rem;
+        }
+        .nav-pill-link {
+          font-size: 0.52rem;
+          letter-spacing: 0.16em;
+        }
+        .nav-flow-hit {
+          max-width: 96px;
+        }
+      }
+
+      /* Scroll-driven copy over Citron Bloom (no 3D text in the flower scene). */
+      body:not(.citron-bloom-mode) #bloom-story {
+        display: none;
+      }
+
+      body.experience-stomp #bloom-story {
+        display: none;
+      }
+
+      #bloom-story {
+        position: fixed;
+        inset: 0;
+        z-index: 3;
+        pointer-events: none;
+        --bs: var(--bloom-scroll, 0);
+      }
+
+      /* Full-viewport scenes — copy runs edge-to-edge with inset padding; washes bleed full width. */
+      .bloom-panel {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        padding: clamp(1.25rem, 5vw, 3.5rem);
+        box-sizing: border-box;
+        pointer-events: none;
+      }
+
+      .bloom-panel::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        opacity: 0.92;
+        background: linear-gradient(
+          105deg,
+          color-mix(in srgb, var(--scene-tint, #0f172a) 72%, transparent) 0%,
+          color-mix(in srgb, var(--background) 88%, transparent) 45%,
+          color-mix(in srgb, var(--scene-tint, #0f172a) 55%, transparent) 100%
+        );
+      }
+
+      .bloom-panel::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 1;
+        pointer-events: none;
+        background:
+          linear-gradient(
+            90deg,
+            transparent,
+            color-mix(in srgb, var(--scene-accent, #7dd3fc) 45%, transparent) 18%,
+            color-mix(in srgb, var(--scene-accent, #7dd3fc) 32%, transparent) 82%,
+            transparent
+          ) center top / 100% 1px no-repeat,
+          linear-gradient(
+            90deg,
+            transparent,
+            color-mix(in srgb, var(--scene-accent, #7dd3fc) 28%, transparent) 22%,
+            color-mix(in srgb, var(--scene-accent, #7dd3fc) 22%, transparent) 78%,
+            transparent
+          ) center bottom / 100% 1px no-repeat;
+        opacity: 0.55;
+      }
+
+      .bloom-panel:nth-child(1) {
+        --scene-tint: #0c1222;
+        --scene-accent: #7dd3fc;
+      }
+      .bloom-panel:nth-child(2) {
+        --scene-tint: #0a1620;
+        --scene-accent: #5eead4;
+      }
+      .bloom-panel:nth-child(3) {
+        --scene-tint: #0f1428;
+        --scene-accent: #93c5fd;
+      }
+      .bloom-panel:nth-child(4) {
+        --scene-tint: #0d1220;
+        --scene-accent: #a5b4fc;
+      }
+      .bloom-panel:nth-child(5) {
+        --scene-tint: #0a1822;
+        --scene-accent: #6ee7b7;
+      }
+      .bloom-panel:nth-child(6) {
+        --scene-tint: #101525;
+        --scene-accent: #67e8f9;
+      }
+      .bloom-panel:nth-child(7) {
+        --scene-tint: #0c1526;
+        --scene-accent: #7dd3fc;
+      }
+
+      .bloom-scene {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        max-width: min(72rem, 100%);
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: clamp(0.75rem, 2.5vw, 1.35rem);
+      }
+
+      .bloom-panel:nth-child(even) .bloom-scene {
+        text-align: right;
+      }
+
+      .bloom-panel:nth-child(even) .bloom-scene__rail {
+        margin-left: auto;
+      }
+
+      .bloom-scene__rail {
+        width: min(100%, 42rem);
+        height: 3px;
+        border-radius: 999px;
+        background: linear-gradient(
+          90deg,
+          color-mix(in srgb, var(--scene-accent, #7dd3fc) 70%, transparent),
+          color-mix(in srgb, var(--scene-accent, #7dd3fc) 15%, transparent)
+        );
+        opacity: 0.85;
+      }
+
+      .bloom-panel:nth-child(even) .bloom-scene__rail {
+        background: linear-gradient(
+          270deg,
+          color-mix(in srgb, var(--scene-accent, #7dd3fc) 70%, transparent),
+          color-mix(in srgb, var(--scene-accent, #7dd3fc) 15%, transparent)
+        );
+      }
+
+      .bloom-scene__meta {
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: clamp(0.72rem, 1.35vw, 0.88rem);
+        font-weight: 400;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: color-mix(in srgb, var(--scene-accent, #7dd3fc) 75%, var(--text-muted));
+        display: flex;
+        align-items: baseline;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin: 0;
+      }
+
+      .bloom-panel:nth-child(even) .bloom-scene__meta {
+        justify-content: flex-end;
+      }
+
+      .bloom-scene__index {
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: clamp(2.75rem, 10vw, 5.5rem);
+        font-weight: 300;
+        line-height: 0.85;
+        letter-spacing: -0.02em;
+        color: transparent;
+        -webkit-text-stroke: 1px color-mix(in srgb, var(--scene-accent, #7dd3fc) 42%, transparent);
+        user-select: none;
+        margin-bottom: clamp(-0.25rem, -1vw, 0);
+        opacity: 0.9;
+      }
+
+      .bloom-panel h2 {
+        font-family: 'Outfit', system-ui, sans-serif;
+        font-weight: 600;
+        font-size: clamp(1.35rem, 3.8vw, 2.35rem);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        line-height: 1.12;
+        margin: 0;
+        max-width: min(22ch, 100%);
+        background: linear-gradient(
+          120deg,
+          var(--text-primary) 0%,
+          color-mix(in srgb, var(--text-primary) 88%, var(--scene-accent, #7dd3fc)) 100%
+        );
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+      }
+
+      .bloom-panel:nth-child(even) h2 {
+        margin-left: auto;
+      }
+
+      .bloom-panel .bloom-scene__body {
+        font-family: 'Outfit', system-ui, sans-serif;
+        font-size: clamp(0.88rem, 1.85vw, 1.08rem);
+        line-height: 1.72;
+        color: color-mix(in srgb, var(--text-muted) 92%, var(--text-primary));
+        font-weight: 400;
+        max-width: min(38rem, 100%);
+        letter-spacing: 0.01em;
+        margin: 0;
+        border-left: 1px solid color-mix(in srgb, var(--scene-accent, #7dd3fc) 28%, transparent);
+        padding-left: clamp(0.85rem, 2.5vw, 1.25rem);
+      }
+
+      .bloom-panel:nth-child(even) .bloom-scene__body {
+        margin-left: auto;
+        border-left: none;
+        border-right: 1px solid color-mix(in srgb, var(--scene-accent, #7dd3fc) 28%, transparent);
+        padding-left: 0;
+        padding-right: clamp(0.85rem, 2.5vw, 1.25rem);
+      }
+
+      .bloom-panel--1 {
+        opacity: min(
+          clamp(0, calc((var(--bs) - 0.05) / 0.07), 1),
+          clamp(0, calc((0.28 - var(--bs)) / 0.08), 1)
+        );
+      }
+
+      .bloom-panel--1 .bloom-scene {
+        transform: translate3d(0, calc((1 - min(
+          clamp(0, calc((var(--bs) - 0.05) / 0.07), 1),
+          clamp(0, calc((0.28 - var(--bs)) / 0.08), 1)
+        )) * 22px), 0);
+      }
+
+      .bloom-panel--2 {
+        opacity: min(
+          clamp(0, calc((var(--bs) - 0.2) / 0.07), 1),
+          clamp(0, calc((0.4 - var(--bs)) / 0.08), 1)
+        );
+      }
+
+      .bloom-panel--2 .bloom-scene {
+        transform: translate3d(0, calc((1 - min(
+          clamp(0, calc((var(--bs) - 0.2) / 0.07), 1),
+          clamp(0, calc((0.4 - var(--bs)) / 0.08), 1)
+        )) * 22px), 0);
+      }
+
+      .bloom-panel--3 {
+        opacity: min(
+          clamp(0, calc((var(--bs) - 0.34) / 0.07), 1),
+          clamp(0, calc((0.54 - var(--bs)) / 0.08), 1)
+        );
+      }
+
+      .bloom-panel--3 .bloom-scene {
+        transform: translate3d(0, calc((1 - min(
+          clamp(0, calc((var(--bs) - 0.34) / 0.07), 1),
+          clamp(0, calc((0.54 - var(--bs)) / 0.08), 1)
+        )) * 22px), 0);
+      }
+
+      .bloom-panel--4 {
+        opacity: min(
+          clamp(0, calc((var(--bs) - 0.48) / 0.07), 1),
+          clamp(0, calc((0.68 - var(--bs)) / 0.08), 1)
+        );
+      }
+
+      .bloom-panel--4 .bloom-scene {
+        transform: translate3d(0, calc((1 - min(
+          clamp(0, calc((var(--bs) - 0.48) / 0.07), 1),
+          clamp(0, calc((0.68 - var(--bs)) / 0.08), 1)
+        )) * 22px), 0);
+      }
+
+      .bloom-panel--5 {
+        opacity: min(
+          clamp(0, calc((var(--bs) - 0.62) / 0.07), 1),
+          clamp(0, calc((0.82 - var(--bs)) / 0.08), 1)
+        );
+      }
+
+      .bloom-panel--5 .bloom-scene {
+        transform: translate3d(0, calc((1 - min(
+          clamp(0, calc((var(--bs) - 0.62) / 0.07), 1),
+          clamp(0, calc((0.82 - var(--bs)) / 0.08), 1)
+        )) * 22px), 0);
+      }
+
+      .bloom-panel--6 {
+        opacity: min(
+          clamp(0, calc((var(--bs) - 0.76) / 0.07), 1),
+          clamp(0, calc((0.96 - var(--bs)) / 0.08), 1)
+        );
+      }
+
+      .bloom-panel--6 .bloom-scene {
+        transform: translate3d(0, calc((1 - min(
+          clamp(0, calc((var(--bs) - 0.76) / 0.07), 1),
+          clamp(0, calc((0.96 - var(--bs)) / 0.08), 1)
+        )) * 22px), 0);
+      }
+
+      .bloom-panel--7 {
+        opacity: min(
+          clamp(0, calc((var(--bs) - 0.88) / 0.06), 1),
+          clamp(0, calc((1.04 - var(--bs)) / 0.1), 1)
+        );
+      }
+
+      .bloom-panel--7 .bloom-scene {
+        transform: translate3d(0, calc((1 - min(
+          clamp(0, calc((var(--bs) - 0.88) / 0.06), 1),
+          clamp(0, calc((1.04 - var(--bs)) / 0.1), 1)
+        )) * 22px), 0);
+      }
+
+      .bloom-panel--1 .bloom-scene,
+      .bloom-panel--2 .bloom-scene,
+      .bloom-panel--3 .bloom-scene,
+      .bloom-panel--4 .bloom-scene,
+      .bloom-panel--5 .bloom-scene,
+      .bloom-panel--6 .bloom-scene,
+      .bloom-panel--7 .bloom-scene {
+        transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .bloom-panel--1 .bloom-scene,
+        .bloom-panel--2 .bloom-scene,
+        .bloom-panel--3 .bloom-scene,
+        .bloom-panel--4 .bloom-scene,
+        .bloom-panel--5 .bloom-scene,
+        .bloom-panel--6 .bloom-scene,
+        .bloom-panel--7 .bloom-scene {
+          transition: none;
+        }
+      }
+
+      body:not(.citron-bloom-mode) .scroll-hint,
+      body.experience-stomp .scroll-hint {
+        display: none;
+      }
+
+      .scroll-hint {
+        position: fixed;
+        left: 50%;
+        bottom: max(2.75rem, 11vh);
+        transform: translateX(-50%);
+        z-index: 9;
+        pointer-events: none;
+        font-family: 'Outfit', system-ui, sans-serif;
+        font-size: clamp(0.58rem, 1vw, 0.76rem);
+        font-weight: 400;
+        letter-spacing: 0.36em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        color: #7dd3fc;
+        text-shadow:
+          0 0 32px color-mix(in srgb, #0ea5e9 40%, transparent),
+          0 0 2px color-mix(in srgb, #020617 80%, transparent);
+        opacity: clamp(0, calc(1 - var(--scroll-raw, 0) * 24), 1);
+        transition: opacity 0.4s ease;
+      }
+
+      #cookie-consent {
+        position: fixed;
+        left: 50%;
+        bottom: max(1rem, env(safe-area-inset-bottom));
+        transform: translateX(-50%);
+        z-index: 60;
+        width: min(calc(100vw - 2rem), 36rem);
+        padding: 0 0.75rem;
+        pointer-events: none;
+      }
+
+      #cookie-consent:not([hidden]) {
+        pointer-events: auto;
+      }
+
+      .cookie-consent__inner {
+        pointer-events: auto;
+        padding: 1.15rem 1.25rem 1.05rem;
+        border-radius: 14px;
+        border: 1px solid color-mix(in srgb, var(--text-muted) 28%, transparent);
+        background: color-mix(in srgb, var(--background) 82%, #0f172a);
+        box-shadow: 0 18px 48px color-mix(in srgb, #000 55%, transparent);
+      }
+
+      .cookie-consent__text {
+        font-family: 'Outfit', system-ui, sans-serif;
+        font-size: clamp(0.65rem, 1.35vw, 0.74rem);
+        font-weight: 400;
+        line-height: 1.55;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+      }
+
+      .cookie-consent__text a {
+        color: inherit;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+
+      .cookie-consent__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        margin-bottom: 0.85rem;
+      }
+
+      .cookie-consent__btn {
+        font-family: 'Outfit', system-ui, sans-serif;
+        font-size: 0.62rem;
+        font-weight: 500;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        padding: 0.62rem 1.15rem;
+        border-radius: 999px;
+        cursor: pointer;
+        border: 1px solid color-mix(in srgb, var(--text-muted) 45%, transparent);
+        transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+      }
+
+      .cookie-consent__btn--primary {
+        background: color-mix(in srgb, #1e3a5f 88%, #0f172a);
+        color: var(--text-primary);
+      }
+
+      .cookie-consent__btn--primary:hover {
+        background: color-mix(in srgb, #2563eb 35%, #1e293b);
+        border-color: color-mix(in srgb, var(--text-muted) 65%, transparent);
+      }
+
+      .cookie-consent__btn--ghost {
+        background: transparent;
+        color: var(--text-primary);
+      }
+
+      .cookie-consent__btn--ghost:hover {
+        background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+      }
+
+      .cookie-consent__links {
+        font-family: 'Outfit', system-ui, sans-serif;
+        font-size: 0.58rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem 0.65rem;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+      }
+
+      .cookie-consent__links a {
+        color: color-mix(in srgb, var(--text-primary) 88%, var(--text-muted));
+        text-decoration: underline;
+        text-underline-offset: 3px;
       }
     </style>
   </head>
@@ -200,31 +982,159 @@
     <div id="hud-container"></div>
     <div id="interaction-layer"></div>
     
-    <div id="citron-bloom-hud"></div>
+    <div id="bloom-story">
+      <div class="bloom-panel bloom-panel--1">
+        <div class="bloom-scene">
+          <span class="bloom-scene__index" aria-hidden="true">01</span>
+          <p class="bloom-scene__meta">Inkblot Studio · Momentum</p>
+          <div class="bloom-scene__rail" aria-hidden="true"></div>
+          <h2>Engineering momentum</h2>
+          <p class="bloom-scene__body">Inkblot Studio partners with teams who need more than slides—we ship production systems, internal tools, and flagship experiences. From discovery to launch, we own architecture, implementation, and the operational story around it.</p>
+        </div>
+      </div>
+      <div class="bloom-panel bloom-panel--2">
+        <div class="bloom-scene">
+          <span class="bloom-scene__index" aria-hidden="true">02</span>
+          <p class="bloom-scene__meta">Research · Labs</p>
+          <div class="bloom-scene__rail" aria-hidden="true"></div>
+          <h2>R&amp;D labs</h2>
+          <p class="bloom-scene__body">Our lab explores applied AI, simulation, and robotics. Experiments that survive scrutiny graduate into product: safer autonomy, faster iteration loops, and tooling our clients can run without a research team on payroll.</p>
+        </div>
+      </div>
+      <div class="bloom-panel bloom-panel--3">
+        <div class="bloom-scene">
+          <span class="bloom-scene__index" aria-hidden="true">03</span>
+          <p class="bloom-scene__meta">Stack · Citron</p>
+          <div class="bloom-scene__rail" aria-hidden="true"></div>
+          <h2>Proprietary stack</h2>
+          <p class="bloom-scene__body">Citron is our backbone for data-heavy pipelines—autonomous ingestion, observability, and failure-aware orchestration. It is how we deliver resilient backends without reinventing reliability on every engagement.</p>
+        </div>
+      </div>
+      <div class="bloom-panel bloom-panel--4">
+        <div class="bloom-scene">
+          <span class="bloom-scene__index" aria-hidden="true">04</span>
+          <p class="bloom-scene__meta">Culture · Craft</p>
+          <div class="bloom-scene__rail" aria-hidden="true"></div>
+          <h2>People &amp; craft</h2>
+          <p class="bloom-scene__body">We are engineers, designers, and researchers who prefer small senior squads to bloated benches. You work with the people who write the code, review the models, and answer when something breaks at 3 a.m.</p>
+        </div>
+      </div>
+      <div class="bloom-panel bloom-panel--5">
+        <div class="bloom-scene">
+          <span class="bloom-scene__index" aria-hidden="true">05</span>
+          <p class="bloom-scene__meta">Process · Delivery</p>
+          <div class="bloom-scene__rail" aria-hidden="true"></div>
+          <h2>How we work</h2>
+          <p class="bloom-scene__body">Fixed-scope prototypes, embedded sprints, or long-running product teams—we match the contract to the risk. Clear milestones, visible repos, and weekly demos so stakeholders always know what is real versus roadmap fiction.</p>
+        </div>
+      </div>
+      <div class="bloom-panel bloom-panel--6">
+        <div class="bloom-scene">
+          <span class="bloom-scene__index" aria-hidden="true">06</span>
+          <p class="bloom-scene__meta">Focus · Industries</p>
+          <div class="bloom-scene__rail" aria-hidden="true"></div>
+          <h2>Where we fit</h2>
+          <p class="bloom-scene__body">Industrial automation, creative technology, fintech infrastructure, and research-driven startups. If your problem blends software, data, and physical or visual reality, we have probably built something adjacent already.</p>
+        </div>
+      </div>
+      <div class="bloom-panel bloom-panel--7">
+        <div class="bloom-scene">
+          <span class="bloom-scene__index" aria-hidden="true">07</span>
+          <p class="bloom-scene__meta">Next · Contact</p>
+          <div class="bloom-scene__rail" aria-hidden="true"></div>
+          <h2>Start a conversation</h2>
+          <p class="bloom-scene__body">Tell us about the system you need—not only the interface. We will reply with an honest take on scope, stack, and timeline. Remote-first with roots in Europe; English and German project teams available.</p>
+        </div>
+      </div>
+    </div>
+
+    <p class="scroll-hint" aria-hidden="true">Scroll&nbsp;&nbsp;down</p>
+
+    <div
+      id="cookie-consent"
+      hidden
+      role="dialog"
+      aria-labelledby="cookie-consent-title"
+      aria-modal="true"
+    >
+      <div class="cookie-consent__inner">
+        <p id="cookie-consent-title" class="cookie-consent__text">
+          Our site uses essential cookies and, with your consent, analytics cookies.
+          Details in our <a href="#">privacy notice</a>.
+        </p>
+        <div class="cookie-consent__actions">
+          <button type="button" class="cookie-consent__btn cookie-consent__btn--primary" id="cookie-accept">
+            Accept cookies
+          </button>
+          <button type="button" class="cookie-consent__btn cookie-consent__btn--ghost" id="cookie-reject">
+            Reject cookies
+          </button>
+        </div>
+        <p class="cookie-consent__links">
+          <a href="#">Terms &amp; conditions</a>
+          <span aria-hidden="true">·</span>
+          <a href="#">Cookie policy</a>
+          <span aria-hidden="true">·</span>
+          <a href="#">Privacy policy</a>
+        </p>
+      </div>
+    </div>
+
+    <div class="custom-scroll-rail" id="custom-scroll-rail" aria-hidden="true">
+      <div class="custom-scroll-track" id="custom-scroll-track">
+        <div class="custom-scroll-edge"></div>
+        <div class="custom-scroll-thumb" id="custom-scroll-thumb"></div>
+      </div>
+    </div>
 
     <div id="ui-layer">
-      <header>
-        <div class="logo-container">
-          <img src="/inkblotstudio_logo.svg" alt="Inkblot Studio Logo">
+      <div class="top-chrome">
+        <a class="brand-row" href="#" aria-label="Inkblot Studio home">
+          <img src="/inkblotstudio_logo.svg" alt="">
           <div class="logo-text">
             <span class="inkblot">Inkblot</span>
             <span class="studio">Studio</span>
             <span class="tm">™</span>
           </div>
-        </div>
-        
-        <nav>
-          <a href="#">Showcase</a>
-          <a href="#">Products</a>
-          <a href="#">Contact</a>
-        </nav>
+        </a>
 
-        <button class="menu-toggle" aria-label="Menu">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-      </header>
+        <div class="nav-stack-top-right">
+          <div class="nav-pill-backlight" aria-hidden="true"></div>
+          <div class="nav-pill-morph">
+            <header class="nav-pill-at">
+              <a class="nav-pill-link" href="#">Work</a>
+              <button
+                type="button"
+                class="nav-flow-hit"
+                id="nav-audio-toggle"
+                aria-label="Toggle ambient audio"
+                aria-pressed="false"
+              >
+                <span class="nav-flow-wrap">
+                  <svg class="nav-flow-svg" viewBox="0 0 220 24" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                    <defs>
+                      <linearGradient id="nav-flow-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#f8fafc" stop-opacity="0.82"/>
+                        <stop offset="42%" stop-color="#a7f3d0" stop-opacity="0.55"/>
+                        <stop offset="50%" stop-color="#ecfdf5" stop-opacity="0.95"/>
+                        <stop offset="58%" stop-color="#a7f3d0" stop-opacity="0.55"/>
+                        <stop offset="100%" stop-color="#e2e8f0" stop-opacity="0.88"/>
+                      </linearGradient>
+                    </defs>
+                    <path id="nav-flow-path" d="M 0 12 L 220 12" />
+                  </svg>
+                </span>
+              </button>
+              <a class="nav-pill-link" href="#">Contact</a>
+            </header>
+            <div class="nav-mini-player" id="nav-mini" aria-label="Track controls">
+              <button type="button" class="nav-mini-btn" id="nav-mini-prev" aria-label="Previous track">⟨⟨</button>
+              <span class="nav-mini-meta" id="nav-mini-meta">—</span>
+              <button type="button" class="nav-mini-btn" id="nav-mini-next" aria-label="Next track">⟩⟩</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script type="module" src="/src/main.ts"></script>

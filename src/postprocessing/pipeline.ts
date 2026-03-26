@@ -39,7 +39,7 @@ export class PostprocessingPipeline {
     this.initialized = true;
   }
 
-  render(renderer: WebGLRenderer, scene: Scene, camera: Camera): void {
+  render(renderer: WebGLRenderer, scene: Scene, camera: Camera, _elapsed?: number): void {
     if (!this.initialized) {
       renderer.render(scene, camera);
       return;

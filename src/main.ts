@@ -1,4 +1,4 @@
-import { Clock, Scene, OrthographicCamera, Raycaster, Vector2 } from 'three';
+import { Clock, type Scene } from 'three';
 import { InkblotRenderer } from '@/core/renderer';
 import { InkblotScene } from '@/core/scene';
 import { InkblotCamera } from '@/core/camera';
@@ -10,11 +10,18 @@ import { AnimationSystem } from '@/systems/animationSystem';
 import { AudioSystem } from '@/systems/audioSystem';
 import { FluidFlowerComponent } from '@/components/fluidFlower';
 import { CitronBloomComponent } from '@/components/citronBloomComponent';
-import { AudioButtonComponent } from '@/components/audioButton';
 import { Sections3DComponent } from '@/components/sections3D';
 import type { FrameContext, ISystem, IComponent } from '@/types';
+import { smootherstep } from '@/utils/math';
 import { CitronBloomComposer } from '@citron-bloom-engine/bloom-postprocess/citronBloomComposer';
+import {
+  createBloomTransitionScene,
+  type BloomTransitionSceneHandle,
+} from '@citron-bloom-engine/examples/createBloomTransitionScene';
+import { bloomScrollDrive } from '@citron-bloom-engine/bloom-runtime/flowerBloomExperience';
 import { BLOOM_LOD_PROFILES, type BloomLod } from '@citron-bloom-engine/bloom-core/types';
+import { initCookieConsent } from '@/ui/cookieConsent';
+import { initNavChrome, updateNavChrome } from '@/ui/navChrome';
 
 /**
  * Production: Citron Bloom only with `?citronBloom` (optional `=medium` | `low`).
@@ -38,16 +45,21 @@ function parseCitronBloomMode(): { active: boolean; lod: BloomLod } {
   return { active: false, lod: 'high' };
 }
 
+/** `?experience=stomp` — iridescent stomp + floating video tiles; default `flower`. */
+function parseBloomExperienceId(): string {
+  const raw = new URLSearchParams(location.search).get('experience');
+  if (raw && /^[a-z0-9_-]+$/i.test(raw)) {
+    return raw.toLowerCase();
+  }
+  return 'flower';
+}
+
 type PostStack = PostprocessingPipeline | CitronBloomComposer;
 
 class Inkblot {
   private readonly renderer: InkblotRenderer;
   private readonly scene: InkblotScene;
   private readonly camera: InkblotCamera;
-
-  private readonly hudScene = new Scene();
-  private readonly hudCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
-  private readonly raycaster = new Raycaster();
 
   private readonly controls: InkblotControls;
   private readonly postprocessing: PostStack;
@@ -60,6 +72,7 @@ class Inkblot {
 
   private readonly useCitronBloom: boolean;
   private readonly citronBloomLod: BloomLod;
+  private readonly bloomExperienceId: string;
   private fluidFlowerComponent: FluidFlowerComponent | null = null;
   private citronBloomComponent: CitronBloomComponent | null = null;
 
@@ -67,13 +80,21 @@ class Inkblot {
   private interactionSystem!: InteractionSystem;
   private animationSystem!: AnimationSystem;
   private audioSystem!: AudioSystem;
-  private audioButtonComponent!: AudioButtonComponent;
-  private sections3DComponent!: Sections3DComponent;
+  private sections3DComponent: Sections3DComponent | null = null;
+  private citronTransitionScene: Scene | null = null;
+  private citronTransitionHandle: BloomTransitionSceneHandle | null = null;
 
   constructor() {
     const { active: useCitronBloom, lod: citronBloomLod } = parseCitronBloomMode();
     this.useCitronBloom = useCitronBloom;
     this.citronBloomLod = citronBloomLod;
+    this.bloomExperienceId = useCitronBloom ? parseBloomExperienceId() : 'flower';
+
+    document.body.classList.toggle('citron-bloom-mode', useCitronBloom);
+    document.body.classList.toggle(
+      'experience-stomp',
+      useCitronBloom && this.bloomExperienceId === 'stomp',
+    );
 
     const container = document.getElementById('canvas-container');
     if (!container) throw new Error('Missing #canvas-container element');
@@ -89,9 +110,10 @@ class Inkblot {
     if (useCitronBloom) {
       const profile = BLOOM_LOD_PROFILES[citronBloomLod];
       this.postprocessing = new CitronBloomComposer({
-        bloomStrength: profile.bloomStrength,
-        bloomRadius: 0.5,
-        bloomThreshold: 0.68,
+        // Lower than profile so the flower stays readable; threshold leaves midtones crisp.
+        bloomStrength: profile.bloomStrength * 0.48,
+        bloomRadius: 0.36,
+        bloomThreshold: 0.82,
         enableDof: profile.enableDof,
       });
     } else {
@@ -112,10 +134,15 @@ class Inkblot {
   }
 
   private registerSystems(): void {
-    this.animationSystem = new AnimationSystem(this.camera);
+    const cameraMode = this.useCitronBloom ? 'delicate' : 'orbit';
+    this.animationSystem = new AnimationSystem(this.camera, cameraMode);
     this.scrollSystem = new ScrollSystem();
     this.interactionSystem = new InteractionSystem();
     this.audioSystem = new AudioSystem();
+
+    if (this.useCitronBloom) {
+      this.camera.setDampFactor(1.42);
+    }
 
     this.systems.push(
       this.scrollSystem,
@@ -126,26 +153,17 @@ class Inkblot {
   }
 
   private registerComponents(): void {
-    this.audioButtonComponent = new AudioButtonComponent();
-    this.sections3DComponent = new Sections3DComponent();
-
     if (this.useCitronBloom) {
       this.citronBloomComponent = new CitronBloomComponent(
         this.citronBloomLod,
+        this.bloomExperienceId,
         this.interactionSystem,
       );
-      this.components.push(
-        this.citronBloomComponent,
-        this.audioButtonComponent,
-        this.sections3DComponent,
-      );
+      this.components.push(this.citronBloomComponent);
     } else {
       this.fluidFlowerComponent = new FluidFlowerComponent();
-      this.components.push(
-        this.fluidFlowerComponent,
-        this.audioButtonComponent,
-        this.sections3DComponent,
-      );
+      this.sections3DComponent = new Sections3DComponent();
+      this.components.push(this.fluidFlowerComponent, this.sections3DComponent);
     }
   }
 
@@ -153,10 +171,15 @@ class Inkblot {
     this.camera.resize(this.renderer.viewport);
 
     if (this.postprocessing instanceof CitronBloomComposer) {
+      if (this.useCitronBloom && this.bloomExperienceId === 'flower') {
+        this.citronTransitionHandle = createBloomTransitionScene();
+        this.citronTransitionScene = this.citronTransitionHandle.scene;
+      }
       this.postprocessing.init(
         this.renderer.instance,
         this.scene.instance,
         this.camera.instance,
+        this.citronTransitionScene ?? undefined,
       );
     } else {
       this.postprocessing.init(this.renderer.instance);
@@ -169,49 +192,18 @@ class Inkblot {
       component.init(this.frameContext);
     }
 
-    this.scene.instance.remove(this.audioButtonComponent.mesh);
-    this.hudScene.add(this.audioButtonComponent.mesh);
-    this.audioButtonComponent.setSystems(this.audioSystem, this.interactionSystem);
-
     if (this.useCitronBloom && this.citronBloomComponent) {
-      const hud = document.getElementById('citron-bloom-hud');
-      const bloom = this.citronBloomComponent;
-      if (hud) {
-        void import('@citron-bloom-engine/bloom-ui/mountBloomHud').then(({ mountBloomHud }) => {
-          mountBloomHud(hud, {
-            onBloomMore: () => {
-              window.scrollTo({
-                top: Math.max(document.body.scrollHeight - window.innerHeight, 0),
-                behavior: 'smooth',
-              });
-            },
-            onBloomLess: () => {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            },
-          });
-        });
-      }
+      this.animationSystem.setMode(this.citronBloomComponent.getCameraMode());
     }
+
+    initNavChrome(this.audioSystem);
+    initCookieConsent();
 
     this.onResize();
 
     window.addEventListener('resize', this.onResize);
-    window.addEventListener('click', this.onClick);
     this.renderer.instance.setAnimationLoop(this.tick);
   }
-
-  private onClick = (e: MouseEvent): void => {
-    const pointer = new Vector2();
-    pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
-    pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-    this.raycaster.setFromCamera(pointer, this.hudCamera);
-    const intersects = this.raycaster.intersectObject(this.audioButtonComponent.mesh);
-
-    if (intersects.length > 0) {
-      this.audioSystem.toggleAudio();
-    }
-  };
 
   private tick = (): void => {
     const delta = Math.min(this.clock.getDelta(), 0.1);
@@ -220,9 +212,22 @@ class Inkblot {
     this.frameContext.delta = delta;
     this.frameContext.elapsed = elapsed;
 
-    for (const system of this.systems) {
-      system.update(this.frameContext);
+    this.scrollSystem.update(this.frameContext);
+    document.documentElement.style.setProperty(
+      '--scroll-raw',
+      String(this.scrollSystem.progress),
+    );
+    this.interactionSystem.update(this.frameContext);
+    this.animationSystem.setScrollProgress(this.scrollSystem.progress);
+    if (this.useCitronBloom) {
+      this.animationSystem.setPointerNdc(
+        this.interactionSystem.pointer.x,
+        this.interactionSystem.pointer.y,
+      );
     }
+    this.animationSystem.update(this.frameContext);
+    this.audioSystem.update(this.frameContext);
+    updateNavChrome(this.audioSystem, this.scrollSystem, elapsed);
 
     if (this.citronBloomComponent && this.scrollSystem) {
       this.citronBloomComponent.setBloomFromScroll(this.scrollSystem.progress);
@@ -232,12 +237,29 @@ class Inkblot {
       component.update(this.frameContext);
     }
 
-    if (this.animationSystem && this.scrollSystem) {
-      this.animationSystem.setScrollProgress(this.scrollSystem.progress);
-    }
-
     if (this.sections3DComponent && this.scrollSystem) {
       this.sections3DComponent.setInteractionValues(this.scrollSystem.progress);
+    }
+
+    if (this.useCitronBloom) {
+      const p = this.scrollSystem.progress;
+      const bloomCss =
+        this.bloomExperienceId === 'flower' ? bloomScrollDrive(p) : p;
+      document.documentElement.style.setProperty(
+        '--bloom-scroll',
+        String(bloomCss),
+      );
+      if (
+        this.bloomExperienceId === 'flower' &&
+        this.postprocessing instanceof CitronBloomComposer
+      ) {
+        const t = smootherstep(0.9, 0.998, this.scrollSystem.progress);
+        this.postprocessing.setSceneTransition(
+          t,
+          this.interactionSystem.pointer.x,
+          this.interactionSystem.pointer.y,
+        );
+      }
     }
 
     if (this.fluidFlowerComponent && this.scrollSystem && this.audioSystem) {
@@ -250,15 +272,17 @@ class Inkblot {
     this.camera.update(delta);
     this.controls.update();
 
+    if (this.citronTransitionHandle && this.bloomExperienceId === 'flower') {
+      this.citronTransitionHandle.update(elapsed, this.camera.instance);
+    }
+
     this.postprocessing.render(
       this.renderer.instance,
       this.scene.instance,
       this.camera.instance,
+      elapsed,
     );
 
-    this.renderer.instance.autoClear = false;
-    this.renderer.instance.render(this.hudScene, this.hudCamera);
-    this.renderer.instance.autoClear = true;
   };
 
   private onResize = (): void => {
@@ -268,18 +292,6 @@ class Inkblot {
     const { width, height, pixelRatio } = this.renderer.viewport;
     this.postprocessing.resize(width, height, pixelRatio);
 
-    const aspect = width / height;
-    this.hudCamera.left = -aspect;
-    this.hudCamera.right = aspect;
-    this.hudCamera.top = 1;
-    this.hudCamera.bottom = -1;
-    this.hudCamera.updateProjectionMatrix();
-
-    const paddingX = 0.15;
-    const paddingY = 0.15;
-    const size = 0.2;
-    this.audioButtonComponent.mesh.scale.set(size, size, 1);
-    this.audioButtonComponent.mesh.position.set(aspect - paddingX - size / 2, -1 + paddingY + size / 2, 0);
   };
 
   dispose(): void {
@@ -288,6 +300,10 @@ class Inkblot {
 
     for (const component of this.components) component.dispose();
     for (const system of this.systems) system.dispose();
+
+    this.citronTransitionHandle?.dispose();
+    this.citronTransitionHandle = null;
+    this.citronTransitionScene = null;
 
     this.postprocessing.dispose();
     this.controls.dispose();

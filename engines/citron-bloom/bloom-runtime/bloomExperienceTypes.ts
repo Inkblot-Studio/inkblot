@@ -1,0 +1,26 @@
+import type { Group, Object3D, WebGLRenderer } from 'three';
+import type { BloomLod } from '../bloom-core/types';
+
+/** Camera behaviour for a registered bloom experience (extends app AnimationSystem). */
+export type BloomCameraMode = 'delicate' | 'orbit' | 'showcaseOrbit';
+
+export interface BloomSceneFactoryContext {
+  renderer: WebGLRenderer;
+  lod: BloomLod;
+}
+
+/**
+ * Pluggable 3D experience: swap `root` into the main scene exclusively.
+ * Register factories on {@link BloomExperienceRegistry} to add unlimited scenes.
+ */
+export interface BloomExperienceScene {
+  readonly id: string;
+  readonly root: Object3D;
+  readonly cameraMode: BloomCameraMode;
+  update(delta: number, elapsed: number): void;
+  dispose(): void;
+  setBloomFromScroll?(scroll01: number): void;
+  setPointerWorld?(x: number, z: number): void;
+}
+
+export type BloomSceneFactory = (ctx: BloomSceneFactoryContext) => BloomExperienceScene;
