@@ -51,6 +51,12 @@ export class CitronBloomComponent implements IComponent {
     this.active?.setBloomFromScroll?.(s);
   }
 
+  /** Scroll journey: pass pre-computed bloom drive in [0, 1]. */
+  applyBloomDrive(drive01: number): void {
+    const d = clamp(drive01, 0, 1);
+    this.active?.applyBloomDrive?.(d);
+  }
+
   dispose(): void {
     bloomExperienceRegistry.disposeActive();
     this.active = null;

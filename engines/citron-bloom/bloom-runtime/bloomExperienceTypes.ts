@@ -20,6 +20,8 @@ export interface BloomExperienceScene {
   update(delta: number, elapsed: number): void;
   dispose(): void;
   setBloomFromScroll?(scroll01: number): void;
+  /** Direct bloom drive [0,1] — used by scroll journey (opening/closing curves applied by caller). */
+  applyBloomDrive?(drive01: number): void;
   setPointerWorld?(x: number, z: number): void;
 }
 

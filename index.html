@@ -4,12 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Inkblot Studio | Cinematic Visual Experience</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
       :root {
         --scroll-raw: 0;
+        --journey-section: 0;
+        --journey-local: 0;
+        --journey-hero-ui: 0;
+        --journey-edge: 0;
+        --journey-rail: #7dd3fc;
         --dominant: #2563EB;
         --support: #60A5FA;
         --primary: #2563EB;
@@ -481,8 +487,356 @@
       #virtual-scroll-space {
         display: block;
         width: 1px;
-        height: 850vh;
+        height: 1550vh;
         pointer-events: none;
+      }
+
+      @media (max-width: 768px) {
+        #virtual-scroll-space {
+          height: 1750vh;
+        }
+      }
+
+      body.journey-flower-active[data-journey-section='0'] {
+        --journey-rail: #7dd3fc;
+      }
+      body.journey-flower-active[data-journey-section='1'] {
+        --journey-rail: #c4b5fd;
+      }
+      body.journey-flower-active[data-journey-section='2'] {
+        --journey-rail: #a78bfa;
+      }
+      body.journey-flower-active[data-journey-section='3'] {
+        --journey-rail: #22d3ee;
+      }
+      body.journey-flower-active[data-journey-section='4'] {
+        --journey-rail: #38bdf8;
+      }
+      body.journey-flower-active[data-journey-section='5'] {
+        --journey-rail: #6ee7b7;
+      }
+
+      body.journey-boundary-flash::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: 8;
+        pointer-events: none;
+        background: radial-gradient(
+          ellipse 58% 52% at 50% 42%,
+          rgba(248, 250, 252, 0.07) 0%,
+          rgba(2, 6, 23, 0.72) 72%
+        );
+        animation: journey-boundary-flash 0.68s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      }
+
+      @keyframes journey-boundary-flash {
+        0% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        body.journey-boundary-flash::after {
+          animation-duration: 0.2s;
+        }
+      }
+
+      .journey-scene-frame {
+        position: fixed;
+        inset: 0;
+        z-index: 3;
+        pointer-events: none;
+      }
+
+      body:not(.journey-flower-active) .journey-scene-frame {
+        display: none;
+      }
+
+      .journey-scene-frame__vignette {
+        position: absolute;
+        inset: 0;
+        box-shadow:
+          inset 0 0 min(100px, 18vw) rgba(0, 0, 0, 0.5),
+          inset 0 0 min(220px, 38vw) rgba(0, 0, 0, 0.35);
+        opacity: calc(0.28 + var(--journey-edge, 0) * 0.52);
+        transition: opacity 0.15s ease-out;
+      }
+
+      .journey-scene-frame__rail {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          color-mix(in srgb, var(--journey-rail) 75%, transparent) 22%,
+          color-mix(in srgb, var(--journey-rail) 90%, #fff) 50%,
+          color-mix(in srgb, var(--journey-rail) 75%, transparent) 78%,
+          transparent 100%
+        );
+        opacity: calc(0.38 + var(--journey-edge, 0) * 0.55);
+        transition: opacity 0.15s ease-out;
+      }
+
+      .journey-scene-frame__rail--top {
+        top: 0;
+      }
+
+      .journey-scene-frame__rail--bottom {
+        bottom: 0;
+      }
+
+      /* Six-band journey DOM (flower experience): WebGL canvas stays z-index 1. */
+      #journey-dom {
+        position: fixed;
+        inset: 0;
+        z-index: 4;
+        pointer-events: none;
+      }
+
+      #journey-dom .journey-panel {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: clamp(1.1rem, 4vw, 3rem);
+        box-sizing: border-box;
+        opacity: 0;
+        transition: opacity 0.55s ease;
+        pointer-events: none;
+      }
+
+      #journey-hero.journey-panel {
+        opacity: var(--journey-hero-ui, 0);
+      }
+
+      body[data-journey-section='2'] #journey-portfolio.journey-panel {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      body[data-journey-section='3'] #journey-water-cap.journey-panel {
+        opacity: 1;
+      }
+
+      body[data-journey-section='4'] #journey-lab-cap.journey-panel {
+        opacity: 1;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #journey-dom .journey-panel {
+          transition: opacity 0.2s ease;
+        }
+      }
+
+      .journey-hero__grid {
+        width: min(72rem, 100%);
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem 2rem;
+        align-items: end;
+      }
+
+      @media (min-width: 900px) {
+        .journey-hero__grid {
+          grid-template-columns: 1.1fr 0.9fr;
+          align-items: end;
+        }
+      }
+
+      .journey-hero__head {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        z-index: 0;
+      }
+
+      .journey-hero__founded {
+        font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+        font-size: clamp(0.62rem, 1.1vw, 0.72rem);
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: color-mix(in srgb, #c4b5fd 72%, var(--text-muted));
+      }
+
+      .journey-hero__studio {
+        font-family: 'Outfit', system-ui, sans-serif;
+        font-weight: 500;
+        font-size: clamp(0.85rem, 1.4vw, 1rem);
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: color-mix(in srgb, var(--text-primary) 92%, #e9d5ff);
+      }
+
+      .journey-hero__title {
+        font-family: 'Outfit', system-ui, sans-serif;
+        font-weight: 600;
+        font-size: clamp(1.75rem, 5.2vw, 3.15rem);
+        line-height: 1.08;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        max-width: 18ch;
+        color: var(--text-primary);
+        text-shadow: 0 0 42px color-mix(in srgb, #312e81 35%, transparent);
+        display: flex;
+        flex-direction: column;
+        gap: 0.12em;
+      }
+
+      .journey-hero__title-line {
+        display: block;
+      }
+
+      .journey-hero__tagline {
+        font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+        font-size: clamp(0.72rem, 1.25vw, 0.88rem);
+        letter-spacing: 0.06em;
+        color: color-mix(in srgb, #a5b4fc 88%, var(--text-muted));
+        max-width: 36ch;
+        margin-top: 0.25rem;
+      }
+
+      .journey-hero__body {
+        font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+        font-size: clamp(0.68rem, 1.15vw, 0.8rem);
+        line-height: 1.65;
+        letter-spacing: 0.04em;
+        color: color-mix(in srgb, var(--text-muted) 94%, #e2e8f0);
+        max-width: 38ch;
+        justify-self: end;
+        border-left: 1px solid color-mix(in srgb, #a78bfa 35%, transparent);
+        padding-left: clamp(0.85rem, 2vw, 1.2rem);
+      }
+
+      @media (max-width: 899px) {
+        .journey-hero__body {
+          justify-self: start;
+          border-left: none;
+          border-top: 1px solid color-mix(in srgb, #a78bfa 28%, transparent);
+          padding-left: 0;
+          padding-top: 0.85rem;
+          max-width: 100%;
+        }
+      }
+
+      #portfolio-shell {
+        width: min(42rem, 100%);
+        margin-left: 0;
+        margin-right: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
+
+      .journey-terminal__label {
+        font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+        font-size: clamp(0.58rem, 1vw, 0.68rem);
+        letter-spacing: 0.32em;
+        text-transform: uppercase;
+        color: color-mix(in srgb, #e9d5ff 75%, var(--text-muted));
+        margin-bottom: 0.35rem;
+      }
+
+      .journey-terminal__list {
+        list-style: none;
+        font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+        font-size: clamp(0.68rem, 1.2vw, 0.8rem);
+        letter-spacing: 0.08em;
+        color: color-mix(in srgb, var(--text-primary) 90%, #c4b5fd);
+      }
+
+      .journey-terminal__list li {
+        margin: 0.35rem 0;
+        padding-left: 0.15rem;
+      }
+
+      .journey-terminal__list li::before {
+        content: '-> ';
+        color: color-mix(in srgb, #a78bfa 80%, var(--text-muted));
+      }
+
+      .journey-chat {
+        margin-top: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        max-width: 28rem;
+      }
+
+      .journey-chat label {
+        font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+        font-size: 0.58rem;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: color-mix(in srgb, var(--text-muted) 92%, #e9d5ff);
+      }
+
+      .journey-chat__row {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+
+      .journey-chat input[type='text'] {
+        flex: 1;
+        min-width: 0;
+        font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+        font-size: 0.72rem;
+        letter-spacing: 0.06em;
+        padding: 0.55rem 0.85rem;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, #a78bfa 42%, #334155);
+        background: color-mix(in srgb, #020617 82%, transparent);
+        color: var(--text-primary);
+        outline: none;
+      }
+
+      .journey-chat input::placeholder {
+        color: color-mix(in srgb, var(--text-muted) 75%, #94a3b8);
+      }
+
+      .journey-chat button[type='submit'] {
+        font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+        font-size: 0.58rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        padding: 0.55rem 0.95rem;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, #c4b5fd 45%, #475569);
+        background: color-mix(in srgb, #1e1b4b 55%, #020617);
+        color: var(--text-primary);
+        cursor: pointer;
+      }
+
+      .journey-chat button[type='submit']:focus-visible,
+      .journey-chat input:focus-visible {
+        outline: 1px solid color-mix(in srgb, #c4b5fd 65%, transparent);
+        outline-offset: 2px;
+      }
+
+      .journey-caption {
+        font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+        font-size: clamp(0.62rem, 1.05vw, 0.74rem);
+        letter-spacing: 0.26em;
+        text-transform: uppercase;
+        color: color-mix(in srgb, #7dd3fc 72%, var(--text-muted));
+        text-align: center;
+        max-width: 40rem;
+        line-height: 1.55;
+      }
+
+      .journey-caption strong {
+        display: block;
+        font-weight: 500;
+        letter-spacing: 0.34em;
+        margin-bottom: 0.45rem;
+        color: color-mix(in srgb, #e0e7ff 88%, #7dd3fc);
       }
 
       @media (max-width: 768px) {
@@ -517,6 +871,10 @@
       }
 
       body.experience-stomp #bloom-story {
+        display: none;
+      }
+
+      body.journey-flower-active #bloom-story {
         display: none;
       }
 
@@ -979,6 +1337,12 @@
     <div id="virtual-scroll-space"></div>
 
     <div id="canvas-container"></div>
+
+    <div class="journey-scene-frame" id="journey-scene-frame" aria-hidden="true">
+      <div class="journey-scene-frame__vignette"></div>
+      <div class="journey-scene-frame__rail journey-scene-frame__rail--top"></div>
+      <div class="journey-scene-frame__rail journey-scene-frame__rail--bottom"></div>
+    </div>
     <div id="hud-container"></div>
     <div id="interaction-layer"></div>
     
@@ -1046,6 +1410,67 @@
           <p class="bloom-scene__body">Tell us about the system you need—not only the interface. We will reply with an honest take on scope, stack, and timeline. Remote-first with roots in Europe; English and German project teams available.</p>
         </div>
       </div>
+    </div>
+
+    <div id="journey-dom" aria-hidden="true">
+      <section id="journey-hero" class="journey-panel journey-hero" aria-label="Hero">
+        <div class="journey-hero__grid">
+          <div class="journey-hero__head">
+            <span class="journey-hero__founded">Founded 2026</span>
+            <span class="journey-hero__studio">Inkblot Studio</span>
+            <h1 class="journey-hero__title">
+              <span class="journey-hero__title-line">Custom AI systems</span>
+              <span class="journey-hero__title-line">Research to product</span>
+              <span class="journey-hero__title-line">Local &amp; secure</span>
+            </h1>
+            <p class="journey-hero__tagline">Accelerating Every Industry through AI</p>
+          </div>
+          <p class="journey-hero__body">
+            We stay at the edge of the AI field: we research and build custom systems that mature into products. Work runs on our own local compute—private and secure. Citron is our evolving suite of business tools (think creative cloud for operators). We partner B2B to ship, maintain, and scale, with prompt-style workflows that tame complex systems without dumbing them down.
+          </p>
+        </div>
+      </section>
+
+      <section id="journey-portfolio" class="journey-panel" aria-label="Portfolio">
+        <div id="portfolio-shell">
+          <div>
+            <p class="journey-terminal__label">What are you looking for?</p>
+            <ul class="journey-terminal__list">
+              <li>Websites &amp; product surfaces</li>
+              <li>Installations &amp; realtime worlds</li>
+              <li>XR / immersive labs</li>
+              <li>Tools &amp; internal suites</li>
+            </ul>
+          </div>
+          <form id="journey-chat-form" class="journey-chat" autocomplete="off">
+            <label for="journey-chat-q">Ask me anything</label>
+            <div class="journey-chat__row">
+              <input
+                id="journey-chat-q"
+                name="q"
+                type="text"
+                placeholder="ASK ME ANYTHING…"
+                maxlength="500"
+              />
+              <button type="submit">Send</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section id="journey-water-cap" class="journey-panel" aria-label="Water act">
+        <p class="journey-caption">
+          <strong>Stunning visuals</strong>
+          Reflection, glass, and motion — engineered for emotion, tuned for performance.
+        </p>
+      </section>
+
+      <section id="journey-lab-cap" class="journey-panel" aria-label="Lab act">
+        <p class="journey-caption">
+          <strong>// The lab</strong>
+          Prototypes become pipelines: we take experiments from shader to shipping with the same rigor as production code.
+        </p>
+      </section>
     </div>
 
     <p class="scroll-hint" aria-hidden="true">Scroll&nbsp;&nbsp;down</p>

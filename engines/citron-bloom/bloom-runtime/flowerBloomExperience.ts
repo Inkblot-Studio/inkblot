@@ -11,6 +11,15 @@ export function bloomScrollDrive(scroll01: number): number {
   return Math.pow(s, 2.65);
 }
 
+function phasesFromDrive(drive: number): { main: number; branch: number; bud: number } {
+  const d = clamp(drive, 0, 1);
+  const open = smootherstep(0.06, 0.98, d);
+  const main = Math.pow(open, 0.78);
+  const branch = Math.pow(smootherstep(0.1, 0.98, d), 0.6);
+  const bud = Math.pow(smootherstep(0.04, 0.96, d), 0.64);
+  return { main, branch, bud };
+}
+
 function wrapFlowerHandle(handle: CitronBloomSceneHandle): BloomExperienceScene {
   return {
     id: 'flower',
@@ -24,11 +33,11 @@ function wrapFlowerHandle(handle: CitronBloomSceneHandle): BloomExperienceScene 
     },
     setBloomFromScroll(scroll01: number) {
       const s = clamp(scroll01, 0, 1);
-      const drive = bloomScrollDrive(s);
-      const open = smootherstep(0.06, 0.98, drive);
-      const main = Math.pow(open, 0.78);
-      const branch = Math.pow(smootherstep(0.1, 0.98, drive), 0.6);
-      const bud = Math.pow(smootherstep(0.04, 0.96, drive), 0.64);
+      const { main, branch, bud } = phasesFromDrive(bloomScrollDrive(s));
+      handle.setBloomTarget(main, branch, bud);
+    },
+    applyBloomDrive(drive01: number) {
+      const { main, branch, bud } = phasesFromDrive(drive01);
       handle.setBloomTarget(main, branch, bud);
     },
   };
