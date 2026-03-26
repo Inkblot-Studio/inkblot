@@ -184,7 +184,10 @@ export class CitronBloomComposer {
     this.dualBlendPass.parallax.set(parallaxNdcX, parallaxNdcY);
     this.dualBlendPass.setTransitionFx(transitionFx01);
     const fx = Math.max(0, Math.min(1, transitionFx01));
-    (this.filmPass.uniforms as { intensity: { value: number } }).intensity.value = 0.006 + fx * 0.052;
+    // Calmer swim at low transition weight; full strength only near act edges.
+    const distMul = 0.38 + fx * 0.62;
+    this.dualBlendPass.setDistortion(0.032 * distMul);
+    (this.filmPass.uniforms as { intensity: { value: number } }).intensity.value = 0.006 + fx * 0.048;
   }
 
   /** Per-section / per-experience fullscreen treatment (pulse on journey cuts, idle look otherwise). */

@@ -119,19 +119,23 @@ export class ProceduralFlower extends Group {
         uniform float uBloom;
         varying float vGlow;
         void main() {
-          vGlow = 0.6 + 0.4 * sin(uTime * 3.0 + aSeed * 6.28);
-          vec3 p = position * (1.0 + 0.15 * uBloom);
+          float bb = uBloom * uBloom;
+          vGlow = 0.74 + 0.26 * sin(uTime * 1.12 + aSeed * 6.28318);
+          float swell = 1.0 + 0.2 * bb + 0.06 * uBloom * vGlow;
+          vec3 p = position * swell;
           vec4 mv = modelViewMatrix * instanceMatrix * vec4(p, 1.0);
           gl_Position = projectionMatrix * mv;
         }
       `,
       fragmentShader: `
         uniform vec3 uColor;
+        uniform float uBloom;
         varying float vGlow;
         void main() {
-          float a = 0.42 + 0.28 * vGlow;
-          vec3 c = uColor * (0.75 + 0.45 * vGlow);
-          c += vec3(0.25, 0.45, 0.65) * pow(vGlow, 3.0) * 0.35;
+          float bb = uBloom * uBloom;
+          float a = 0.38 + 0.22 * vGlow + 0.24 * bb;
+          vec3 c = uColor * (0.72 + 0.38 * vGlow + 0.35 * bb);
+          c += vec3(0.22, 0.48, 0.62) * pow(vGlow, 2.2) * (0.28 + 0.72 * bb);
           gl_FragColor = vec4(c, a);
         }
       `,

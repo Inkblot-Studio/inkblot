@@ -39,21 +39,28 @@ const blendShader = {
     uniform float uTransitionFx;
     varying vec2 vUv;
 
+    float smootherstep(float e0, float e1, float x) {
+      float t = clamp((x - e0) / (e1 - e0), 0.0, 1.0);
+      return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+    }
+
     void main() {
       float t = clamp(uBlend, 0.0, 1.0);
       float mid = 1.0 - abs(t - 0.5) * 2.0;
+      float midSmooth = mid * mid * (3.0 - 2.0 * mid);
       float fx = clamp(uTransitionFx, 0.0, 1.0);
+      float fxEase = fx * fx * (3.0 - 2.0 * fx);
 
       float wob = sin(uTime * 1.15 + vUv.y * 14.0) * cos(uTime * 0.85 + vUv.x * 11.0);
-      vec2 warp = vec2(wob, -wob * 0.65) * uDistortion * mid * fx;
+      vec2 warp = vec2(wob, -wob * 0.65) * uDistortion * midSmooth * fxEase;
 
-      vec2 uvA = vUv + uParallax * 0.042 * (1.0 - t) * fx + warp * (1.0 - t);
-      vec2 uvB = vUv - uParallax * 0.055 * t * fx - warp * t;
+      vec2 uvA = vUv + uParallax * 0.042 * (1.0 - t) * fxEase + warp * (1.0 - t);
+      vec2 uvB = vUv - uParallax * 0.055 * t * fxEase - warp * t;
 
       vec4 a = texture2D(tSceneA, uvA);
       vec4 b = texture2D(tSceneB, uvB);
 
-      float mixF = smoothstep(0.04, 0.96, t);
+      float mixF = smootherstep(0.025, 0.975, t);
       gl_FragColor = mix(a, b, mixF);
     }
   `,

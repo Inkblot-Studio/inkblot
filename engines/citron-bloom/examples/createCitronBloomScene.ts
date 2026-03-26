@@ -76,9 +76,9 @@ export function createCitronBloomScene(options: CreateCitronBloomSceneOptions): 
   });
   root.add(leaves.mesh);
 
-  const phaseMain = new BloomPhaseController({ smoothSpeed: 0.15, pulseSpeed: 0.38 });
-  const phaseBranch = new BloomPhaseController({ smoothSpeed: 0.14, pulseSpeed: 0.34 });
-  const phaseBud = new BloomPhaseController({ smoothSpeed: 0.13, pulseSpeed: 0.32 });
+  const phaseMain = new BloomPhaseController({ smoothSpeed: 0.178, pulseSpeed: 0.32 });
+  const phaseBranch = new BloomPhaseController({ smoothSpeed: 0.165, pulseSpeed: 0.29 });
+  const phaseBud = new BloomPhaseController({ smoothSpeed: 0.154, pulseSpeed: 0.27 });
   phaseMain.snapTo(0);
   phaseBranch.snapTo(0);
   phaseBud.snapTo(0);

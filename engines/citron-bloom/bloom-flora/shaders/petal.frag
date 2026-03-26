@@ -23,8 +23,16 @@ vec3 fakeEnvReflect(vec3 R) {
 }
 
 void main() {
-  vec3 N = normalize(vNormal);
+  vec3 N0 = normalize(vNormal);
   vec3 V = normalize(vView);
+  // Low-frequency normal breakup — reads as organic glass, not flat plastic.
+  vec3 pert = vec3(
+    sin(uTime * 0.21 + vTip * 5.2 + dot(N0, vec3(3.1, 7.2, 11.3))),
+    sin(uTime * 0.18 + vTip * 4.9 + dot(N0, vec3(5.4, 2.1, 8.9))),
+    sin(uTime * 0.2 + vTip * 5.1 + dot(N0, vec3(9.1, 4.4, 2.6)))
+  );
+  vec3 N = normalize(N0 + pert * 0.042);
+
   float ndv = max(dot(N, V), 0.001);
   float fresnel = 0.035 + 0.965 * pow(1.0 - ndv, 4.5);
   float rim = pow(1.0 - ndv, uRimPower);
@@ -67,7 +75,8 @@ void main() {
   vec3 irid = mix(vec3(1.0), film * 0.5 + vec3(0.5), rim) * pow(rim, 1.4) * 0.14;
 
   vec3 col = subsurface * seeThrough * (0.35 + 0.4 * (1.0 - fresnel));
-  col += env * fresnel * (0.75 + 0.25 * bb);
+  // Slightly tame env reflection so UnrealBloom doesn’t clip harshly.
+  col += env * fresnel * (0.68 + 0.22 * bb);
   col += innerBounce * (0.4 + 0.6 * fresnel) * (0.5 + 0.5 * bb);
   col += uRimColor * rim * (1.15 + 0.45 * bb);
   col += caustCol;
@@ -76,6 +85,9 @@ void main() {
 
   float alpha = mix(0.28, 0.94, fresnel);
   alpha = mix(alpha, min(alpha + 0.06, 1.0), bb * 0.35);
+
+  // Soft shoulder before bloom pass — keeps petals “immaculate” under heavy glow.
+  col = col / (1.0 + col * 0.2);
 
   gl_FragColor = vec4(col, alpha);
 }

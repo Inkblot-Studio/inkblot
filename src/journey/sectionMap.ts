@@ -87,19 +87,19 @@ export function resolveJourney(
  */
 export function computeJourneyDualSceneBlend(j: JourneyState): number {
   const { section, localT } = j;
-  if (section === 0) return smoothstep(0.2, 0.94, localT) * 0.44;
+  if (section === 0) return smoothstep(0.14, 0.91, localT) * 0.47;
   /** Logo act: primary scene only — no secondary “transition” composite behind the hero. */
   if (section === 1) return 0;
   if (section === 2) {
-    const ramp = smoothstep(0, 0.32, localT);
-    return ramp * (0.74 - smoothstep(0, 1, localT) * 0.14);
+    const ramp = smoothstep(0, 0.3, localT);
+    return ramp * (0.71 - smoothstep(0, 1, localT) * 0.11);
   }
-  if (section === 3) return 0.6 + smoothstep(0, 1, localT) * 0.22;
-  if (section === 4) return 0.82;
-  return 0.82 * (1 - smoothstep(0.12, 0.88, localT));
+  if (section === 3) return 0.57 + smoothstep(0, 1, localT) * 0.27;
+  if (section === 4) return 0.845;
+  return 0.845 * (1 - smoothstep(0.08, 0.91, localT));
 }
 
-const SECTION_TRANSITION_EDGE = 0.2;
+const SECTION_TRANSITION_EDGE = 0.24;
 
 /**
  * 0 = stable act (no dual-scene warp / parallax swim / heavy film); 1 = at section in/out.
