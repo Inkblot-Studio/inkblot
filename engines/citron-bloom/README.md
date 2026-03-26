@@ -36,6 +36,7 @@ Self-contained Three.js module for the Citron ecosystem. It lives under **`engin
 | `bloom-curves` | Catmull / Bezier-style stems, DNA helix sampling, extruded tube spines + GLSL deform |
 | `bloom-flora` | **Layered procedural flowers**, multi-head assemblies, smooth **bloom open/close** |
 | `bloom-particles` | `GPUComputationRenderer` position field, points display, pointer + attract forces |
+| `bloom-particle-env` | **Particle-only environments**: instanced soft discs, curve sampling, tree/forest/interior/flow factories |
 | `bloom-postprocess` | Bloom, optional bokeh DOF, screen-space glow, color grading |
 | `bloom-ui` | Optional React HUD using `@citron-systems/citron-ds` CSS + `@citron-systems/citron-ui` |
 | `examples/createCitronBloomScene.ts` | One-call wiring of spines + leaves + flora + particles |
@@ -77,9 +78,26 @@ mountBloomHud(document.getElementById('hud')!, {
 });
 ```
 
+## Particle environments (`bloom-particle-env`)
+
+Procedural **trees, forests, interiors, and flow ribbons** built from **instanced** geometry (no trunk meshes). Uses the same curve toolkit as `bloom-curves` and GPU vertex motion (sway, cohesion, depth fade).
+
+**API** (import from `@citron-bloom-engine` or `@citron-bloom-engine/bloom-particle-env`):
+
+- `createParticleTree(config?)` — trunk + branches + leaf clusters.
+- `createParticleForest(config?)` — many trees, merged `InstancedMesh`, noise placement.
+- `createParticleInterior(config?)` — columns + arch curves.
+- `createParticleFlow(config?)` — dense helix / ribbon cloud.
+
+Lower-level: `buildParticleTreeSamples`, `sampleCurveWithJitter`, `createInstancedParticleCloud`, `scaleParticleBudget(lod, n)`.
+
+**Demo experiences** (Inkblot Citron Bloom mode): **`?experience=particleforest`** or **`?experience=particleinterior`** (case-insensitive in the app; optional **`?lod=medium`** | **`?lod=low`**). Uses `showcaseOrbit` camera + exponential fog on the host scene.
+
+`BloomSceneFactoryContext` now includes **`scene`** so factories can attach fog or environment hooks.
+
 ## Inkblot demo
 
-See **How to use** above: local dev defaults to this engine; **`?fluid`** restores the raymarched flower. For production previews, use **`?citronBloom`** (optional **`=medium`** | **`=low`**).
+See **How to use** above: local dev defaults to this engine; **`?fluid`** restores the raymarched flower. For production previews, use **`?citronBloom`** (optional **`=medium`** | **`=low`**). Try **`?experience=particleforest`** or **`?experience=particleinterior`** for particle-environment demos.
 
 ## Performance
 

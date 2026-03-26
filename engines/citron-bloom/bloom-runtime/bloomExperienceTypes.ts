@@ -1,4 +1,4 @@
-import type { Group, Object3D, WebGLRenderer } from 'three';
+import type { Object3D, Scene, WebGLRenderer } from 'three';
 import type { BloomLod } from '../bloom-core/types';
 
 /** Camera behaviour for a registered bloom experience (extends app AnimationSystem). */
@@ -7,6 +7,8 @@ export type BloomCameraMode = 'delicate' | 'orbit' | 'showcaseOrbit';
 export interface BloomSceneFactoryContext {
   renderer: WebGLRenderer;
   lod: BloomLod;
+  /** Host scene (fog, environment hooks for particle demos). */
+  scene: Scene;
 }
 
 /**

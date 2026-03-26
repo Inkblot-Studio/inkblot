@@ -46,7 +46,7 @@ export class BloomExperienceRegistry {
 
     this.disposeActive();
 
-    const ctx: BloomSceneFactoryContext = { renderer, lod };
+    const ctx: BloomSceneFactoryContext = { renderer, lod, scene };
     const next = factory(ctx);
     scene.add(next.root);
     this.active = next;
