@@ -19,37 +19,28 @@ export interface GlassLogoHeroHandle {
 
 function createGlassMaterial(): MeshPhysicalMaterial {
   const m = new MeshPhysicalMaterial({
-    color: new Color(0x1c3a5c),
-    metalness: 0.1,
-    roughness: 0.05,
-    transmission: 0.72,
-    thickness: 0.48,
+    color: new Color(0x1a3352),
+    metalness: 0.04,
+    roughness: 0.012,
+    transmission: 0.97,
+    thickness: 0.24,
     ior: 1.52,
-    iridescence: 0.82,
-    iridescenceIOR: 1.3,
-    iridescenceThicknessRange: [100, 480],
+    /** High iridescence reads as smeary / view-dependent haze; keep a hint only. */
+    iridescence: 0.14,
+    iridescenceIOR: 1.22,
+    iridescenceThicknessRange: [140, 280],
     transparent: true,
     opacity: 1,
     side: DoubleSide,
-    emissive: new Color(0x3b82f6),
-    emissiveIntensity: 0.28,
+    emissive: new Color(0x2563eb),
+    emissiveIntensity: 0.11,
     clearcoat: 1,
-    clearcoatRoughness: 0.035,
-    envMapIntensity: 1.45,
+    clearcoatRoughness: 0.018,
+    envMapIntensity: 1.62,
+    specularIntensity: 1,
+    attenuationColor: new Color(0xc7e8ff),
+    attenuationDistance: 0.85,
   });
-
-  m.onBeforeCompile = (shader) => {
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <dithering_fragment>',
-      `
-      vec2 d = vUv - 0.5;
-      float edge = smoothstep(0.2, 0.92, abs(d.x) + abs(d.y));
-      vec3 abr = vec3(0.005, 0.002, -0.004) * edge;
-      gl_FragColor.rgb += abr;
-      #include <dithering_fragment>
-      `,
-    );
-  };
 
   return m;
 }

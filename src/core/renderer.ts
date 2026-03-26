@@ -49,6 +49,9 @@ export class InkblotRenderer {
 
     gl.outputColorSpace = SRGBColorSpace;
 
+    /** Full-res buffer for mesh transmission — avoids downscaled / soft glass. */
+    gl.transmissionResolutionScale = 1;
+
     // Shadows
     gl.shadowMap.enabled = true;
     gl.shadowMap.type = PCFSoftShadowMap;
