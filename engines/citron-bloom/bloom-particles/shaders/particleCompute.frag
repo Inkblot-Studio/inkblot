@@ -1,12 +1,10 @@
 uniform float uTime;
-uniform vec3 uAttract;
 uniform vec2 uPointer;
 uniform float uPointerStrength;
-uniform sampler2D uTreeData;
-uniform float uTreeCount;
-uniform float uCanopyHeight;
-uniform float uForestAttract;
 
+// --- Simplex / SDF logic for fields ---
+
+// Basic 3D noise for continuous flow
 vec3 hash3(vec3 p) {
   p = vec3(dot(p, vec3(127.1, 311.7, 74.7)), dot(p, vec3(269.5, 183.3, 246.1)), dot(p, vec3(113.5, 271.9, 124.6)));
   return fract(sin(p) * 43758.5453123);
@@ -33,12 +31,23 @@ float valueNoise(vec3 x) {
   return mix(nxy0, nxy1, f.z);
 }
 
+// Curl noise generates continuous divergence-free vector fields
 vec3 curlNoise(vec3 p) {
-  float e = 0.2;
+  float e = 0.1;
   float dx = valueNoise(p + vec3(e, 0.0, 0.0)) - valueNoise(p - vec3(e, 0.0, 0.0));
   float dy = valueNoise(p + vec3(0.0, e, 0.0)) - valueNoise(p - vec3(0.0, e, 0.0));
   float dz = valueNoise(p + vec3(0.0, 0.0, e)) - valueNoise(p - vec3(0.0, 0.0, e));
   return normalize(vec3(dz - dy, dx - dz, dy - dx) + 1e-4);
+}
+
+// SDF Cylinder for vertical stem attraction
+float sdCylinder(vec3 p, vec3 c) {
+  return length(p.xz - c.xy) - c.z;
+}
+
+// SDF Sphere for bud/flower core attraction
+float sdSphere(vec3 p, float s) {
+  return length(p) - s;
 }
 
 void main() {
@@ -47,40 +56,58 @@ void main() {
   vec3 p = s.xyz;
   float kind = s.a;
 
-  vec3 attract;
-  if (kind < 0.1) {
-    vec3 toA = uAttract - p;
-    float dA = length(toA) + 0.12;
-    attract = normalize(toA) * (0.044 / (dA * dA));
-  } else {
-    float n = max(uTreeCount, 1.0);
-    float tid = floor(clamp((kind - 0.1) / 0.9 * n, 0.0, n - 1.0));
-    vec2 tuv = vec2((tid + 0.5) / n, 0.5);
-    vec3 treeBase = texture2D(uTreeData, tuv).xyz;
-    vec3 canopy = treeBase + vec3(0.0, uCanopyHeight, 0.0);
-    vec3 toC = canopy - p;
-    float dC = length(toC) + 0.12;
-    attract = normalize(toC) * (uForestAttract / (dC * dC));
-    attract += vec3(0.0, 0.014, 0.0);
+  // 1. SCALAR FIELD (ATTRACTION TO STRUCTURE)
+  // We want particles to orbit a central vertical stem, and bundle near the top bud
+  
+  vec3 structAttract = vec3(0.0);
+  
+  // Stem SDF (cylinder on Y axis)
+  float dStem = sdCylinder(p, vec3(0.0, 0.0, 0.08)); 
+  
+  // Bud SDF (sphere near top)
+  float dBud = sdSphere(p - vec3(0.0, 1.2, 0.0), 0.35);
+  
+  // Smooth min to blend the two SDFs into one continuous structure field
+  float k = 0.5;
+  float h = clamp(0.5 + 0.5 * (dBud - dStem) / k, 0.0, 1.0);
+  float dStruct = mix(dBud, dStem, h) - k * h * (1.0 - h);
+  
+  // Calculate gradient of the SDF to pull particles strictly toward the surface
+  vec2 e = vec2(0.02, 0.0);
+  vec3 grad = normalize(vec3(
+    sdCylinder(p + e.xyy, vec3(0.0, 0.0, 0.08)) - sdCylinder(p - e.xyy, vec3(0.0, 0.0, 0.08)),
+    0.0, // Limit vertical pulling to let flow field drive Y axis
+    sdCylinder(p + e.yyx, vec3(0.0, 0.0, 0.08)) - sdCylinder(p - e.yyx, vec3(0.0, 0.0, 0.08))
+  ));
+  
+  // If particle is too far, pull it in strongly. If close, let it ride the surface.
+  if (dStruct > 0.05) {
+    structAttract = -grad * (0.015 / (dStruct + 0.1));
   }
 
+  // 2. VECTOR FIELD (DIRECTIONAL FLOW)
+  // Continuous curl noise moving upwards
+  vec3 flow = curlNoise(p * 0.8 + vec3(0.0, uTime * 0.2, 0.0));
+  flow.y += 0.5; // Upward bias
+  flow = normalize(flow) * 0.008;
+
+  // 3. INTERACTION FIELD (REPULSION)
   vec3 repel = vec3(0.0);
   vec2 delta = p.xz - uPointer;
-  float dP = length(delta) + 0.15;
-  if (dP < 1.35) {
-    float repelScale = kind < 0.1 ? 0.42 : 1.0;
-    repel = vec3(-delta.x, 0.12, -delta.y) * (uPointerStrength * repelScale / (dP * dP));
+  float dP = length(delta) + 0.1;
+  if (dP < 1.0) {
+    repel = vec3(-delta.x, 0.05, -delta.y) * (uPointerStrength * 0.6 / (dP * dP));
   }
 
-  vec3 flow = curlNoise(p * 0.55 + uTime * 0.14);
-  if (kind < 0.1) {
-    flow *= 0.014;
-    p += attract + repel + flow;
-    p *= 0.99978;
-  } else {
-    flow *= 0.048;
-    p += attract + repel + flow;
-    p *= 0.999;
+  // Apply fields
+  p += structAttract + flow + repel;
+
+  // Lifetime / Respawn
+  // If a particle floats too high, reset it to the bottom of the structure
+  if (p.y > 2.5 || length(p) > 3.0) {
+    float angle = hash3(p + uTime).x * 6.28;
+    float radius = 0.2 + hash3(p - uTime).y * 0.4;
+    p = vec3(cos(angle) * radius, -0.5 + hash3(p).z * 0.2, sin(angle) * radius);
   }
 
   gl_FragColor = vec4(p, kind);

@@ -6,93 +6,105 @@ uniform vec3 uAccentGlow;
 uniform float uTime;
 uniform float uRipplePhase;
 uniform float uRippleStrength;
+uniform vec3 uSH[9]; // Spherical Harmonics for GI
 
 varying vec3 vNormal;
 varying vec3 vView;
 varying vec4 vColor;
-varying float vTip;
+varying vec2 vUv;
 
-/** View-space fake HDRI: cool lift + horizon band + side strips (chrome glass read). */
+/** Spherical Harmonics evaluation for Global Illumination */
+vec3 calcSH(vec3 normal) {
+  vec3 result = uSH[0];
+  result += uSH[1] * normal.y;
+  result += uSH[2] * normal.z;
+  result += uSH[3] * normal.x;
+  
+  vec3 n2 = normal * normal;
+  result += uSH[4] * normal.x * normal.y;
+  result += uSH[5] * normal.y * normal.z;
+  result += uSH[6] * (3.0 * n2.z - 1.0);
+  result += uSH[7] * normal.x * normal.z;
+  result += uSH[8] * (n2.x - n2.y);
+  
+  return max(result, vec3(0.0));
+}
+
+/** View-space env: ink void (#020617 family) + cool sky rim — no muddy warm shift. */
 vec3 fakeEnvReflect(vec3 R) {
   float up = R.y * 0.5 + 0.5;
-  float horizon = exp(-pow(R.y * 2.2 - 0.15, 2.0) * 3.5);
-  vec3 base = mix(vec3(0.02, 0.04, 0.09), vec3(0.2, 0.4, 0.68), up);
-  base += vec3(0.14, 0.22, 0.34) * horizon * 0.55;
-  base += vec3(0.55, 0.78, 1.0) * pow(max(R.x, 0.0), 3.2) * 0.28;
-  base += vec3(0.82, 0.52, 0.92) * pow(max(-R.x, 0.0), 2.5) * 0.12;
-  base += vec3(0.92, 0.96, 1.0) * pow(max(-R.z, 0.0), 3.5) * 0.15;
+  float horizon = exp(-pow(R.y * 2.2 - 0.12, 2.0) * 3.8);
+  vec3 voidCol = vec3(0.008, 0.015, 0.035);
+  vec3 zenith = vec3(0.12, 0.38, 0.72);
+  vec3 base = mix(voidCol, zenith, up);
+  base += vec3(0.08, 0.2, 0.36) * horizon * 0.45;
+  base += vec3(0.45, 0.72, 1.0) * pow(max(R.x, 0.0), 3.4) * 0.22;
+  base += vec3(0.25, 0.55, 0.95) * pow(max(-R.x, 0.0), 3.0) * 0.06;
+  base += vec3(0.75, 0.88, 1.0) * pow(max(-R.z, 0.0), 3.2) * 0.12;
   return base;
 }
 
+float sdCapsule(vec2 p, vec2 a, vec2 b, float r) {
+  vec2 pa = p - a, ba = b - a;
+  float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
+  return length( pa - ba*h ) - r;
+}
+
 void main() {
-  vec3 N0 = normalize(vNormal);
+  // Capsule shape masking
+  float aspect = 0.12 / 0.45;
+  vec2 p = vUv;
+  p.x = (p.x - 0.5);
+  p.y = (p.y - 0.5) / aspect;
+  
+  float r = 0.5;
+  float h = 0.5 / aspect - r;
+  float d = sdCapsule(p, vec2(0.0, -h), vec2(0.0, h), r);
+  
+  if (d > 0.0) discard;
+
+  vec3 N = normalize(vNormal);
   vec3 V = normalize(vView);
-  // Low-frequency normal breakup — reads as organic glass, not flat plastic.
-  vec3 pert = vec3(
-    sin(uTime * 0.21 + vTip * 5.2 + dot(N0, vec3(3.1, 7.2, 11.3))),
-    sin(uTime * 0.18 + vTip * 4.9 + dot(N0, vec3(5.4, 2.1, 8.9))),
-    sin(uTime * 0.2 + vTip * 5.1 + dot(N0, vec3(9.1, 4.4, 2.6)))
-  );
-  vec3 N = normalize(N0 + pert * 0.042);
 
   float ndv = max(dot(N, V), 0.001);
   float fresnel = 0.035 + 0.965 * pow(1.0 - ndv, 4.5);
-  float rim = pow(1.0 - ndv, uRimPower);
+
+  // Gradient from vertex color
+  vec3 tint = vColor.rgb;
+  
+  // Global illumination acting as ambient lighting base
+  vec3 shLight = calcSH(N);
+  vec3 subsurface = tint * (shLight + 0.52);
+  
+  // Frosted glass see-through based on fresnel and bloom state
+  float bb = uBloom * uBloom;
+  float seeThrough = mix(0.4, 0.85, 1.0 - fresnel) * (0.8 + 0.2 * bb);
 
   vec3 I = normalize(-vView);
   vec3 R = reflect(I, N);
-  vec3 env0 = fakeEnvReflect(R);
-  float rimChromaW = pow(1.0 - ndv, 4.8) * 0.42;
-  vec3 Rc = normalize(
-    R + vec3(0.055, -0.024, 0.038) * pow(1.0 - ndv, 3.6)
-  );
-  vec3 env1 = fakeEnvReflect(Rc);
-  vec3 env = mix(env0, vec3(env1.r, env0.g, env1.b), rimChromaW);
+  vec3 env = fakeEnvReflect(R);
 
-  float bb = uBloom * uBloom;
+  vec3 col = subsurface * seeThrough;
+  
+  // Add crisp reflection
+  col += env * fresnel * 0.85;
+  
+  // Clean CSS-like border
+  float border = smoothstep(-0.06, 0.0, d);
+  vec3 borderColor = mix(vec3(0.15, 0.88, 0.55), vec3(0.35, 0.75, 1.0), 0.35);
+  col = mix(col, borderColor, border);
+  
+  // Subtle inner shadow / bevel
+  col += uAccentGlow * smoothstep(-0.15, 0.0, d) * 0.15 * (0.5 + 0.5 * bb);
 
-  // Body tint seen through “glass” (center more transparent)
-  vec3 tint = mix(uDeepColor, vColor.rgb, 0.22 + 0.58 * vTip + 0.12 * bb);
-  vec3 subsurface = mix(tint * 0.45, uAccentGlow * 0.55, 0.35 + 0.4 * vTip);
-  float seeThrough = mix(0.55, 0.88, 1.0 - fresnel) * (0.65 + 0.35 * bb);
+  // Sharp Specular Highlight representing polished glass
+  vec3 L = normalize(vec3(0.5, 0.8, 0.3));
+  vec3 H = normalize(L + V);
+  float spec = pow(max(dot(N, H), 0.0), 128.0) * 0.9;
+  col += vec3(1.0) * spec;
 
-  // Second bounce fake (light trapped inside)
-  vec3 R2 = reflect(R, N * 0.92 + vec3(0.08, 0.0, 0.0));
-  vec3 innerBounce = fakeEnvReflect(R2) * 0.22 * (0.4 + 0.6 * vTip);
-
-  // Caustic-ish sheen — stronger when bloom opens
-  float caust = pow(max(dot(normalize(I + vec3(0.15, 0.35, 0.08)), N), 0.0), 6.0);
-  vec3 caustCol = uAccentGlow * caust * (0.35 + 0.65 * bb) * (0.25 + 0.75 * vTip);
-
-  // Thin-film / iridescent rim
-  float filmPh = (1.0 - ndv) * 18.0 + uTime * 0.35;
-  vec3 film =
-    vec3(1.0) +
-    0.35 *
-      vec3(
-        sin(filmPh),
-        sin(filmPh + 2.1),
-        sin(filmPh + 4.2)
-      );
-  vec3 irid = mix(vec3(1.0), film * 0.5 + vec3(0.5), rim) * pow(rim, 1.4) * 0.14;
-
-  vec3 col = subsurface * seeThrough * (0.35 + 0.4 * (1.0 - fresnel));
-  // Slightly tame env reflection so UnrealBloom doesn’t clip harshly.
-  col += env * fresnel * (0.68 + 0.22 * bb);
-  col += innerBounce * (0.4 + 0.6 * fresnel) * (0.5 + 0.5 * bb);
-  col += uRimColor * rim * (1.15 + 0.45 * bb);
-  col += caustCol;
-  col += irid;
-  col += uAccentGlow * bb * 0.12 * (0.3 + 0.7 * vTip) * (1.0 - ndv);
-
-  float rip = uRippleStrength * sin(uRipplePhase + ndv * 7.0 + rim * 4.0);
-  col += uAccentGlow * max(0.0, rip) * 0.052 * (0.45 + 0.55 * rim) * (0.55 + 0.45 * bb);
-
-  float alpha = mix(0.28, 0.94, fresnel);
-  alpha = mix(alpha, min(alpha + 0.06, 1.0), bb * 0.35);
-
-  // Soft shoulder before bloom pass — keeps petals “immaculate” under heavy glow.
-  col = col / (1.0 + col * 0.2);
+  float alpha = mix(0.34, 0.95, fresnel);
+  alpha = mix(alpha, min(alpha + 0.1, 1.0), bb * 0.35);
 
   gl_FragColor = vec4(col, alpha);
 }

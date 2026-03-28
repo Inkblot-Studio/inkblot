@@ -15,6 +15,7 @@ const colorGradeShader = {
     uContrast: { value: 1.08 },
     uSaturation: { value: 1.12 },
     uWarmth: { value: -0.035 },
+    uVignette: { value: 0.35 },
   },
   vertexShader: `
     varying vec2 vUv;
@@ -28,6 +29,7 @@ const colorGradeShader = {
     uniform float uContrast;
     uniform float uSaturation;
     uniform float uWarmth;
+    uniform float uVignette;
     varying vec2 vUv;
     void main() {
       vec4 c = texture2D(tDiffuse, vUv);
@@ -37,7 +39,7 @@ const colorGradeShader = {
       col = mix(vec3(l), col, uSaturation);
       col.r += uWarmth * 0.06;
       col.b -= uWarmth * 0.08;
-      float vig = distance(vUv, vec2(0.5)) * 0.35;
+      float vig = distance(vUv, vec2(0.5)) * uVignette;
       col *= 1.0 - vig * vig;
       gl_FragColor = vec4(col, c.a);
     }
@@ -78,6 +80,16 @@ export interface CitronBloomComposerOptions {
   enableDof?: boolean;
   bokehFocus?: number;
   bokehAperture?: number;
+  /** Screen-space halo strength on `volumetricGlowShader` (default 0.07). */
+  glowStrength?: number;
+  /** Film grain intensity passed to `FilmPass` (default 0.006). */
+  filmIntensity?: number;
+  /** Color grade pass — defaults match legacy cinematic stack. */
+  gradeContrast?: number;
+  gradeSaturation?: number;
+  gradeWarmth?: number;
+  /** Vignette strength multiplier (default 0.35). */
+  gradeVignette?: number;
 }
 
 /** Drives {@link CitronBloomComposer.setJourneyVisual} from scroll journey + bloom experience id. */
@@ -151,13 +163,17 @@ export class CitronBloomComposer {
     this.composer.addPass(this.bloomPass);
 
     this.glowPass = new ShaderPass(volumetricGlowShader);
-    this.glowPass.uniforms.uStrength.value = 0.07;
+    this.glowPass.uniforms.uStrength.value = this.options.glowStrength ?? 0.07;
     this.composer.addPass(this.glowPass);
 
     this.gradePass = new ShaderPass(colorGradeShader);
+    this.gradePass.uniforms.uContrast.value = this.options.gradeContrast ?? 1.08;
+    this.gradePass.uniforms.uSaturation.value = this.options.gradeSaturation ?? 1.12;
+    this.gradePass.uniforms.uWarmth.value = this.options.gradeWarmth ?? -0.035;
+    this.gradePass.uniforms.uVignette.value = this.options.gradeVignette ?? 0.35;
     this.composer.addPass(this.gradePass);
 
-    this.filmPass = new FilmPass(0.006, false);
+    this.filmPass = new FilmPass(this.options.filmIntensity ?? 0.006, false);
     this.composer.addPass(this.filmPass);
 
     this.journeyVisualPass = createJourneyVisualPass();

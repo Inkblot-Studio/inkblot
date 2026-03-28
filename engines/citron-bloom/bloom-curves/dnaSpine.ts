@@ -28,6 +28,8 @@ export function createDnaSpineMesh(options: DnaSpineOptions): Mesh {
   const mat = new ShaderMaterial({
     vertexShader: dnaTubeVert,
     fragmentShader: dnaTubeFrag,
+    transparent: true,
+    depthWrite: false,
     uniforms: {
       uTime: { value: 0 },
       uWind: { value: 1 },
@@ -39,7 +41,10 @@ export function createDnaSpineMesh(options: DnaSpineOptions): Mesh {
     },
   });
 
-  return new Mesh(geo, mat);
+  const mesh = new Mesh(geo, mat);
+  mesh.matrixAutoUpdate = false;
+  mesh.updateMatrix();
+  return mesh;
 }
 
 export function updateDnaSpineTime(mesh: Mesh, elapsed: number, wind = 1): void {

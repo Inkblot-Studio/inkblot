@@ -30,6 +30,7 @@ import {
   type PointerGlassShardsHandle,
 } from '@citron-bloom-engine/bloom-flora/createPointerGlassShards';
 import {
+  citronBloomComposerOptionsForFlowerExperience,
   citronBloomComposerOptionsForLod,
   transmissionResolutionScaleForBloomLod,
 } from '@citron-bloom-engine/bloom-runtime';
@@ -162,7 +163,11 @@ export class Inkblot {
     );
 
     if (useCitronBloom) {
-      this.postprocessing = new CitronBloomComposer(citronBloomComposerOptionsForLod(citronBloomLod));
+      const composerOpts =
+        this.bloomExperienceId === 'flower'
+          ? citronBloomComposerOptionsForFlowerExperience(citronBloomLod)
+          : citronBloomComposerOptionsForLod(citronBloomLod);
+      this.postprocessing = new CitronBloomComposer(composerOpts);
     } else {
       this.postprocessing = new PostprocessingPipeline();
     }

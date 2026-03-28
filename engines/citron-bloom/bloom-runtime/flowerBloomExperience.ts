@@ -51,8 +51,11 @@ function wrapFlowerHandle(handle: CitronBloomSceneHandle): BloomExperienceScene 
   };
 }
 
+const FLOWER_HERO_WORLD_SCALE = 6;
+
 export function createFlowerBloomExperience(ctx: BloomSceneFactoryContext): BloomExperienceScene {
   const handle = createCitronBloomScene({ lod: ctx.lod });
   handle.root.position.set(0, FLOWER_EXPERIENCE_ROOT_Y, 0);
+  handle.root.scale.setScalar(FLOWER_HERO_WORLD_SCALE);
   return wrapFlowerHandle(handle);
 }

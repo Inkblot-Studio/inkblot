@@ -2,7 +2,10 @@ import { PerspectiveCamera, Scene } from 'three';
 import type { Vector2 } from 'three';
 import type { BloomLod } from '../bloom-core/types';
 import { CitronBloomComposer } from '../bloom-postprocess/citronBloomComposer';
-import { citronBloomComposerOptionsForLod } from './bloomComposerPresets';
+import {
+  citronBloomComposerOptionsForFlowerExperience,
+  citronBloomComposerOptionsForLod,
+} from './bloomComposerPresets';
 import { CitronBloomEngineHost } from './citronBloomEngineHost';
 import type { BloomFrameContext } from './bloomFrameContext';
 import { createBloomWebGLRenderer, resizeBloomRendererToContainer } from './createBloomWebGLRenderer';
@@ -57,7 +60,11 @@ export function createCitronBloomShell(options: CreateCitronBloomShellOptions): 
   camera.position.set(0, 3, 12);
   camera.lookAt(0, 0, 0);
 
-  const composer = new CitronBloomComposer(citronBloomComposerOptionsForLod(lod));
+  const composerOpts =
+    experienceId === 'flower'
+      ? citronBloomComposerOptionsForFlowerExperience(lod)
+      : citronBloomComposerOptionsForLod(lod);
+  const composer = new CitronBloomComposer(composerOpts);
   composer.init(renderer, scene, camera, options.secondaryScene);
 
   const host = CitronBloomEngineHost.fromOptions({

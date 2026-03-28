@@ -11,7 +11,7 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0,300..600;9..144,1,300..600&family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
       :root {
         --scroll-raw: 0;
@@ -32,6 +32,78 @@
         --text-primary: #F8FAFC;
         --text-muted: #CBD5E1;
         --border: #1E293B;
+      }
+
+      /* Splash Screen Styles */
+      #splash-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background-color: color-mix(in srgb, var(--background) 95%, transparent);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+      }
+
+      #splash-screen.is-loaded {
+        opacity: 0;
+        transform: scale(1.05);
+        pointer-events: none;
+      }
+
+      .splash-bloom {
+        position: relative;
+        width: clamp(80px, 15vw, 120px);
+        height: clamp(80px, 15vw, 120px);
+        transform-style: preserve-3d;
+        animation: splash-spin 8s linear infinite;
+        margin-bottom: 3rem;
+      }
+
+      @keyframes splash-spin {
+        from { transform: perspective(800px) rotateX(60deg) rotateZ(0deg); }
+        to { transform: perspective(800px) rotateX(60deg) rotateZ(360deg); }
+      }
+
+      .splash-petal {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: clamp(20px, 4vw, 30px);
+        height: clamp(70px, 12vw, 100px);
+        margin-left: calc(clamp(20px, 4vw, 30px) / -2);
+        transform-origin: bottom center;
+        background: linear-gradient(to top, rgba(34, 211, 238, 0.1), rgba(167, 139, 250, 0.8));
+        border-radius: 15px 15px 50% 50%;
+        border: 1px solid rgba(34, 211, 238, 0.4);
+        box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);
+        backdrop-filter: blur(4px);
+        transform: rotateZ(calc(var(--i) * 45deg)) translateY(calc(clamp(70px, 12vw, 100px) * -0.3)) rotateX(var(--petal-tilt));
+        animation: petal-breathe 4s ease-in-out infinite alternate;
+      }
+
+      @keyframes petal-breathe {
+        0% { --petal-tilt: 20deg; transform: rotateZ(calc(var(--i) * 45deg)) translateY(calc(clamp(70px, 12vw, 100px) * -0.3)) rotateX(20deg) scale(0.9); }
+        100% { --petal-tilt: 70deg; transform: rotateZ(calc(var(--i) * 45deg)) translateY(calc(clamp(70px, 12vw, 100px) * -0.3)) rotateX(70deg) scale(1.1); }
+      }
+
+      .splash-text {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: clamp(0.6rem, 1vw, 0.75rem);
+        letter-spacing: 0.3em;
+        color: rgba(34, 211, 238, 0.8);
+        text-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+        text-transform: uppercase;
+        animation: text-pulse 2s ease-in-out infinite alternate;
+      }
+
+      @keyframes text-pulse {
+        from { opacity: 0.5; }
+        to { opacity: 1; }
       }
 
       *, *::before, *::after {
@@ -1378,6 +1450,21 @@
     </style>
   </head>
   <body>
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+      <div class="splash-bloom">
+        <div class="splash-petal" style="--i: 0;"></div>
+        <div class="splash-petal" style="--i: 1;"></div>
+        <div class="splash-petal" style="--i: 2;"></div>
+        <div class="splash-petal" style="--i: 3;"></div>
+        <div class="splash-petal" style="--i: 4;"></div>
+        <div class="splash-petal" style="--i: 5;"></div>
+        <div class="splash-petal" style="--i: 6;"></div>
+        <div class="splash-petal" style="--i: 7;"></div>
+      </div>
+      <div class="splash-text">INITIALIZING ENGINE...</div>
+    </div>
+
     <!-- Virtual scroll element to provide native scrollbars while visual is fixed -->
     <div id="virtual-scroll-space"></div>
 

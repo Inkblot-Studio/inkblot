@@ -38,8 +38,6 @@ export interface JourneyWebSceneHandle {
 
 const journeyWaterFog = new FogExp2(0x021018, 0.038);
 const journeyLabFog = new FogExp2(0x020814, 0.036);
-/** Flower acts: no solid ground — depth fog reads as pool / mist (teal-dark). */
-const flowerPoolAtmosphereFog = new FogExp2(0x061820, 0.024);
 
 export function createJourneyWebScene(
   projects: readonly PortfolioProject[],
@@ -96,9 +94,8 @@ export function syncJourneyFog(scene: Scene, section: number): void {
     scene.fog = journeyWaterFog;
   } else if (section === 4) {
     scene.fog = journeyLabFog;
-  } else if (section === 0 || section === 5) {
-    scene.fog = flowerPoolAtmosphereFog;
   } else {
+    /** Flower acts (0, 5): no fog — keeps #020617 void and avoids muddy brown/teal shift. */
     scene.fog = null;
   }
 }

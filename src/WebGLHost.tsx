@@ -19,6 +19,15 @@ export function WebGLHost() {
           return;
         }
         ink = mod.mountInkblot(el);
+        
+        // Fade out splash screen once engine resolves
+        const splash = document.getElementById('splash-screen');
+        if (splash) {
+          splash.classList.add('is-loaded');
+          setTimeout(() => {
+            if (splash.parentNode) splash.remove();
+          }, 800); // Wait for the transition to finish
+        }
       })
       .catch((err) => {
         console.error('[Inkblot] Failed to load engine chunk', err);
