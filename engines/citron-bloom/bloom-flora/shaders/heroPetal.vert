@@ -79,21 +79,21 @@ void main(){
   p.y *= sizeScale;
   p.x *= mix(0.65, 1.0, aRing01);
 
-  /* 2. per-petal curl variation */
-  float petalCurl = aVariation.x * 0.35 * uv.y * uv.y;
+  /* 2. per-petal curl — light; layout already orients tiers */
+  float petalCurl = aVariation.x * 0.22 * uv.y * uv.y;
   mat3 curlMat = rotX(petalCurl);
   p = curlMat * p;
 
-  /* 3. bloom-driven tilt (outward opening) */
+  /* 3. bloom-driven tilt (instance aim is spherical; keep extra tilt modest) */
   float bloomEase = uBloom * uBloom * (3.0 - 2.0 * uBloom);
-  float baseTilt  = mix(0.12, 0.42, aRing01);
-  float bloomTilt = mix(0.0, 1.32, aRing01) * bloomEase;
+  float baseTilt  = mix(0.08, 0.28, aRing01);
+  float bloomTilt = mix(0.0, 0.95, aRing01) * bloomEase;
   float totalTilt = baseTilt + bloomTilt;
   mat3 tiltMat = rotX(totalTilt);
   p = tiltMat * p;
 
   /* 4. asymmetry jitter */
-  float jitter = aVariation.z * 0.09;
+  float jitter = aVariation.z * 0.045;
   mat3 jitterMat = rotZ(jitter);
   p = jitterMat * p;
 
@@ -105,11 +105,11 @@ void main(){
   p.x += nx;
   p.z += nz;
 
-  /* 6. environmental wind — base-to-tip gradient */
-  float windMask  = uv.y * 0.1 * uWind;
-  float windPhase = uTime * 0.3 + aPhase * 0.65;
+  /* 6. environmental wind — orbital phase keeps tiers moving in sequence */
+  float windMask  = uv.y * 0.072 * uWind;
+  float windPhase = uTime * 0.28 + aPhase;
   p.x += sin(windPhase)       * windMask;
-  p.z += cos(windPhase * 0.8) * windMask * 0.35;
+  p.z += cos(windPhase * 0.8) * windMask * 0.32;
 
   /* 7. gentle breathing */
   float breathe = 1.0 + 0.006 * sin(uTime * 0.65 + aPhase * 0.25) + uPulse * 0.012;
