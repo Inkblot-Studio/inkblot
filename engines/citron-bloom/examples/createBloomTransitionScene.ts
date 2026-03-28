@@ -1,13 +1,10 @@
 import {
   AmbientLight,
   Color,
-  DoubleSide,
   FogExp2,
   Group,
   Mesh,
   MeshBasicMaterial,
-  MeshStandardMaterial,
-  OctahedronGeometry,
   PlaneGeometry,
   Scene,
 } from 'three';
@@ -49,8 +46,8 @@ function makeLabel(
 }
 
 /**
- * “Second act” after the flower: iridescent spine, spectrum dust, glass work card,
- * and monospaced menu copy — Active Theory–style depth and atmosphere.
+ * Secondary journey scene: fog, cinematic lights, glass work card, and menu copy.
+ * (Floor plane and crystal spine removed — they leaked into the flower act via dual-scene blend.)
  * Pairs with {@link CitronBloomComposer} dual-scene blend on scroll.
  */
 export function createBloomTransitionScene(): BloomTransitionSceneHandle {
@@ -63,49 +60,6 @@ export function createBloomTransitionScene(): BloomTransitionSceneHandle {
 
   const lighting = createCinematicLighting('transition');
   scene.add(lighting.key, lighting.fill, lighting.rim);
-
-  const floor = new Mesh(
-    new PlaneGeometry(120, 120, 1, 1),
-    new MeshStandardMaterial({
-      color: 0x040812,
-      roughness: 0.98,
-      metalness: 0,
-      emissive: new Color(0x0a1528),
-      emissiveIntensity: 0.12,
-    }),
-  );
-  floor.rotation.x = -Math.PI / 2;
-  floor.position.y = -1.55;
-  scene.add(floor);
-
-  /* --- Iridescent crystal spine --- */
-  const spine = new Group();
-  const shardGeo = new OctahedronGeometry(0.13, 0);
-  let seed = 9.017;
-  const rnd = () => {
-    seed = (seed * 16807) % 2147483647;
-    return (seed - 1) / 2147483646;
-  };
-
-  for (let i = 0; i < 36; i++) {
-    const t = i / 35;
-    const mat = createGlassMaterial('crystal-shard', {
-      color: new Color().setHSL(0.72 + t * 0.14 + (rnd() - 0.5) * 0.04, 0.62, 0.48),
-      roughness: 0.12 + t * 0.16,
-      emissiveIntensity: (0.28 - t * 0.2) * (0.85 + rnd() * 0.3),
-    });
-    const mesh = new Mesh(shardGeo, mat);
-    const spread = 0.32;
-    mesh.position.set(
-      (rnd() - 0.5) * spread,
-      t * 3.1 - 1.05,
-      (rnd() - 0.5) * spread,
-    );
-    mesh.rotation.set(rnd() * Math.PI * 2, rnd() * Math.PI * 2, rnd() * Math.PI * 2);
-    mesh.scale.setScalar(0.55 + rnd() * 1.1);
-    spine.add(mesh);
-  }
-  scene.add(spine);
 
   /* --- Floating glass “work” card --- */
   const cardGroup = new Group();
@@ -175,8 +129,6 @@ export function createBloomTransitionScene(): BloomTransitionSceneHandle {
     scene,
 
     update(elapsed: number, camera: Camera) {
-      spine.rotation.y = elapsed * 0.065;
-
       cardGroup.position.y = 0.42 + Math.sin(elapsed * 0.62) * 0.045;
       cardGroup.rotation.z = 0.04 + Math.sin(elapsed * 0.35) * 0.018;
 
@@ -196,19 +148,7 @@ export function createBloomTransitionScene(): BloomTransitionSceneHandle {
       menuHeader.dispose();
       menuBody.dispose();
 
-      spine.traverse((obj) => {
-        const m = obj as Mesh;
-        if (m.isMesh) {
-          const mt = m.material;
-          if (Array.isArray(mt)) mt.forEach((x) => x.dispose());
-          else mt?.dispose();
-        }
-      });
       lighting.dispose();
-      shardGeo.dispose();
-
-      floor.geometry.dispose();
-      (floor.material as MeshStandardMaterial).dispose();
 
       cardBack.geometry.dispose();
       (cardBack.material as MeshBasicMaterial).dispose();

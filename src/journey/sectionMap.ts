@@ -87,7 +87,8 @@ export function resolveJourney(
  */
 export function computeJourneyDualSceneBlend(j: JourneyState): number {
   const { section, localT } = j;
-  if (section === 0) return smoothstep(0.14, 0.91, localT) * 0.47;
+  /** Opening flower: never composite the secondary scene (avoids transition props bleeding in). */
+  if (section === 0) return 0;
   /** Logo act: primary scene only — no secondary “transition” composite behind the hero. */
   if (section === 1) return 0;
   if (section === 2) {
