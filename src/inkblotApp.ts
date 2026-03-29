@@ -548,12 +548,7 @@ export class Inkblot {
         blend = computeJourneyDualSceneBlend(j);
         transitionFx = computeJourneySectionTransitionFx(j);
       }
-      this.postprocessing.setSceneTransition(
-        blend,
-        this.interactionSystem.pointer.x,
-        this.interactionSystem.pointer.y,
-        transitionFx,
-      );
+      this.postprocessing.setSceneTransition(blend, 0, 0, transitionFx);
     }
 
     if (this.postprocessing instanceof CitronBloomComposer) {

@@ -30,25 +30,29 @@ export interface PointerLiquidRibbonHandle {
   dispose(): void;
 }
 
-/** Short trail — few segments */
-const POINTS_COUNT = 8;
+/** Polyline samples along the trail (head = index 0 = exact pointer anchor) */
+const POINTS_COUNT = 10;
 const RADIAL_SEGS = 6;
-/** Followers: base spring/damp (scaled per-frame by pointer “stress”) */
-const SPRING_K = 128;
-const DAMPING = 17.5;
-/** Head: chases pointer with damping (no snap) */
-const HEAD_SPRING_K = 158;
-const HEAD_DAMPING = 19;
-/** Max dt per physics sub-step — large frame gaps won’t explode the integrator */
-const PHYSICS_STEP_MAX = 1 / 200;
-/** Pointer speed (NDC/s) above this ramps in extra smoothing — keeps fast swipes fluid */
-const POINTER_STRESS_REF = 72;
-const BASE_RADIUS = 0.095;
-const RADIUS_VEL_FLOOR = 0.42;
-/** World distance along the ray — further back reads smaller and less “in your face”. */
+/** Per-segment follow rate (1/s); must stay > 0 for every index or the tail freezes in world space */
+const FOLLOW_RATE_BASE = 18;
+const FOLLOW_RATE_STEP = 1.35;
+const FOLLOW_RATE_MIN = 7;
+/** When idle, pull tail toward head faster so it catches the cursor and the ribbon can vanish */
+const IDLE_FOLLOW_BOOST = 2.35;
+const BASE_RADIUS = 0.088;
+const RADIUS_VEL_FLOOR = 0.38;
 const POINTER_TARGET_DISTANCE = 5.75;
-/** Sort after typical scene meshes so transparent overlay draws last in the main pass. */
 const RIBBON_RENDER_ORDER = 1200;
+
+/** Fade in on tiny motion; fade out when idle */
+const IDLE_FADE_OUT = 1.35;
+const IDLE_FADE_IN = 9;
+/** NDC/s — any motion above this counts as “moving” (raw velocity is damped, keep low) */
+const MOVE_VEL_GATE = 0.45;
+/** World-units: max distance from head to any follower; below low end ribbon is fully faded (tail caught up) */
+const COLLAPSE_FADE_LOW = 0.0022;
+const COLLAPSE_FADE_HIGH = 0.048;
+const OPACITY_EPS = 0.02;
 
 const glowVert = /* glsl */ `
 varying vec3 vNormal;
@@ -68,6 +72,7 @@ uniform float uTime;
 uniform vec3 uColor;
 uniform vec3 uCore;
 uniform float uSwipe;
+uniform float uOpacity;
 varying vec3 vNormal;
 varying vec3 vView;
 varying vec2 vUv;
@@ -78,12 +83,12 @@ void main() {
   float ndv = clamp(abs(dot(N, V)), 0.0, 1.0);
   float rim = pow(1.0 - ndv, 2.0);
   float along = vUv.y;
-  float headBright = 1.0 - smoothstep(0.0, 0.12, along);
-  float tailFade = 1.0 - smoothstep(0.22, 0.48, along);
+  float headBright = 1.0 - smoothstep(0.0, 0.1, along);
+  float tailFade = 1.0 - smoothstep(0.2, 0.46, along);
   float body = 0.22 + 0.78 * tailFade;
   float pulse = 0.9 + 0.1 * sin(uTime * 2.6 + along * 8.0);
   vec3 rgb = mix(uCore, uColor, rim) * pulse;
-  float a = (0.55 * body + 0.85 * rim + 0.72 * headBright) * (0.5 + 0.75 * uSwipe);
+  float a = (0.55 * body + 0.85 * rim + 0.72 * headBright) * (0.5 + 0.75 * uSwipe) * uOpacity;
   gl_FragColor = vec4(rgb * a, 1.0);
 }
 `;
@@ -99,10 +104,9 @@ function makeTubeGeometry(rows: number, cols: number, idxArray: number[]): Buffe
 }
 
 /**
- * Spring ribbon: unlit solid tube + additive glow.
- * Each mesh owns its own BufferGeometry (same vertex data copied each frame) so WebGL
- * attribute updates are not shared across materials — avoids invisible meshes when
- * paired with physical/transmission or multi-pass quirks.
+ * Pointer-anchored trail: head is always the ray hit (emits from cursor); tail is an
+ * exponential moving-average chain — no springs, stable at any pointer speed.
+ * Fades out when the pointer is still.
  */
 export function createPointerLiquidRibbon(): PointerLiquidRibbonHandle {
   const group = new Group();
@@ -110,9 +114,9 @@ export function createPointerLiquidRibbon(): PointerLiquidRibbonHandle {
   group.renderOrder = RIBBON_RENDER_ORDER;
 
   const points = Array.from({ length: POINTS_COUNT }, () => new Vector3());
-  const vels = Array.from({ length: POINTS_COUNT }, () => new Vector3());
 
   let initialized = false;
+  let trailOpacity = 0;
   const ray = new Raycaster();
   const target = new Vector3();
 
@@ -169,6 +173,7 @@ export function createPointerLiquidRibbon(): PointerLiquidRibbonHandle {
       uColor: { value: new Color(0x5eead4) },
       uCore: { value: new Color(0x22d3ee) },
       uSwipe: { value: 0.75 },
+      uOpacity: { value: 1 },
     },
     transparent: true,
     depthWrite: false,
@@ -199,60 +204,59 @@ export function createPointerLiquidRibbon(): PointerLiquidRibbonHandle {
         solidMesh.visible = false;
         glowMesh.visible = false;
         group.visible = false;
+        trailOpacity = 0;
         return;
       }
-      solidMesh.visible = true;
-      glowMesh.visible = true;
-      group.visible = true;
 
       ray.setFromCamera(pointerNdc, camera);
       target.copy(ray.ray.origin).addScaledVector(ray.ray.direction, POINTER_TARGET_DISTANCE);
 
+      const moving = pointerVelocityNdc > MOVE_VEL_GATE;
+      trailOpacity = Math.min(
+        1,
+        Math.max(0, trailOpacity + delta * (moving ? IDLE_FADE_IN : -IDLE_FADE_OUT)),
+      );
+
       if (!initialized) {
-        for (let i = 0; i < POINTS_COUNT; i++) {
-          points[i].copy(target);
-          vels[i].set(0, 0, 0);
-        }
+        for (let i = 0; i < POINTS_COUNT; i++) points[i].copy(target);
         initialized = true;
       }
 
-      const stress = Math.min(1, (pointerVelocityNdc / POINTER_STRESS_REF) ** 2);
-      const kBody = SPRING_K * (1 - 0.5 * stress);
-      const dBody = DAMPING * (1 + 1.35 * stress);
-      const kHead = HEAD_SPRING_K * (1 - 0.18 * stress);
-      const dHead = HEAD_DAMPING * (1 + 0.55 * stress);
-
-      const cappedDelta = Math.min(delta, 0.08);
-      const nSteps = Math.min(14, Math.max(1, Math.ceil(cappedDelta / PHYSICS_STEP_MAX)));
-      const h = cappedDelta / nSteps;
-
-      for (let step = 0; step < nSteps; step++) {
-        for (let i = 0; i < POINTS_COUNT; i++) {
-          const current = points[i];
-          const vel = vels[i];
-          const ax = i === 0 ? target.x : points[i - 1].x;
-          const ay = i === 0 ? target.y : points[i - 1].y;
-          const az = i === 0 ? target.z : points[i - 1].z;
-          const k = i === 0 ? kHead : kBody;
-          const d = i === 0 ? dHead : dBody;
-
-          const fx = (ax - current.x) * k - vel.x * d;
-          const fy = (ay - current.y) * k - vel.y * d;
-          const fz = (az - current.z) * k - vel.z * d;
-
-          vel.x += fx * h;
-          vel.y += fy * h;
-          vel.z += fz * h;
-
-          current.x += vel.x * h;
-          current.y += vel.y * h;
-          current.z += vel.z * h;
-        }
+      points[0].copy(target);
+      const idleBoost = moving ? 1 : IDLE_FOLLOW_BOOST;
+      for (let i = 1; i < POINTS_COUNT; i++) {
+        const rate =
+          Math.max(FOLLOW_RATE_MIN, FOLLOW_RATE_BASE - FOLLOW_RATE_STEP * (i - 1)) * idleBoost;
+        const alpha = 1 - Math.exp(-rate * delta);
+        points[i].lerp(points[i - 1], alpha);
       }
+
+      let maxDistFromHead = 0;
+      for (let i = 1; i < POINTS_COUNT; i++) {
+        maxDistFromHead = Math.max(maxDistFromHead, points[0].distanceTo(points[i]));
+      }
+      const t0 = COLLAPSE_FADE_LOW;
+      const t1 = COLLAPSE_FADE_HIGH;
+      const collapseFade =
+        maxDistFromHead <= t0 ? 0 : maxDistFromHead >= t1 ? 1 : (maxDistFromHead - t0) / (t1 - t0);
+
+      /** While moving, ignore collapse so brief short-chain frames don’t flicker; when idle, fade as tail meets head */
+      const effectiveOpacity = trailOpacity * (moving ? 1 : collapseFade);
+
+      if (effectiveOpacity < OPACITY_EPS) {
+        solidMesh.visible = false;
+        glowMesh.visible = false;
+        group.visible = false;
+        return;
+      }
+
+      solidMesh.visible = true;
+      glowMesh.visible = true;
+      group.visible = true;
 
       const velScale = Math.max(
         RADIUS_VEL_FLOOR,
-        Math.min(0.82, 0.12 + Math.sqrt(pointerVelocityNdc * 0.45) * 0.018),
+        Math.min(0.78, 0.1 + Math.sqrt(pointerVelocityNdc * 0.38) * 0.016),
       );
 
       for (let i = 0; i < POINTS_COUNT; i++) {
@@ -284,7 +288,7 @@ export function createPointerLiquidRibbon(): PointerLiquidRibbonHandle {
         _n.crossVectors(_b, _dir).normalize();
 
         const t = i / rowMax;
-        const radius = BASE_RADIUS * (1 - Math.pow(t, 2.45)) * velScale;
+        const radius = BASE_RADIUS * (1 - Math.pow(t, 2.35)) * velScale;
         const vAlong = i / rowMax;
 
         let vi = i * cols;
@@ -331,18 +335,20 @@ export function createPointerLiquidRibbon(): PointerLiquidRibbonHandle {
       const hue = baseHue + 0.15 * Math.sin(elapsed * 0.2) + 0.05 * Math.sin(elapsed * 0.5);
       const sat = 0.6 + 0.2 * Math.sin(elapsed * 0.3);
 
-      const swipeGlow = Math.min(1, pointerVelocityNdc * 0.18);
+      const swipeGlow = Math.min(1, pointerVelocityNdc * 0.16);
 
       cEmissive.setHSL(hue, sat * 0.85, 0.42 + 0.12 * Math.sin(elapsed * 0.35));
       solidMat.color.copy(cEmissive);
-      solidMat.opacity = 0.38 + swipeGlow * 0.18 + 0.04 * Math.sin(elapsed * 0.75);
+      solidMat.opacity =
+        (0.34 + swipeGlow * 0.2 + 0.035 * Math.sin(elapsed * 0.75)) * effectiveOpacity;
 
       glowMat.uniforms.uTime.value = elapsed;
+      glowMat.uniforms.uOpacity.value = effectiveOpacity;
       cGlowA.setHSL(hue, 0.78, 0.62);
       cGlowB.setHSL(hue + 0.05, 0.55, 0.74);
       (glowMat.uniforms.uColor.value as Color).copy(cGlowA);
       (glowMat.uniforms.uCore.value as Color).copy(cGlowB);
-      glowMat.uniforms.uSwipe.value = Math.min(1, 0.42 + swipeGlow * 0.95);
+      glowMat.uniforms.uSwipe.value = Math.min(1, 0.38 + swipeGlow * 0.9);
     },
 
     dispose() {

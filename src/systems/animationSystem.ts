@@ -18,8 +18,10 @@ function sampleFlowerJourneyPose(
   outPos: Vector3,
   outLook: Vector3,
 ): void {
-  const px = pointerNdcX * 0.22;
-  const py = pointerNdcY * 0.14;
+  void pointerNdcX;
+  void pointerNdcY;
+  const px = 0;
+  const py = 0;
 
   if (section === 0) {
     const u = bloomScrollDrive(localT);
@@ -202,12 +204,10 @@ export class AnimationSystem implements ISystem {
       const lookY = lerp(0.06, 0.9, ease);
 
       const breathe = Math.sin(ctx.elapsed * 0.038) * (0.01 * (1 - ease * 0.55));
-      const parallaxX = this.pointerNdcX * (0.18 + ease * 0.14);
-      const parallaxY = this.pointerNdcY * (0.12 + ease * 0.1);
 
       this.camera.moveTo(
-        Math.sin(theta) * radiusXZ + parallaxX,
-        camY + breathe + parallaxY,
+        Math.sin(theta) * radiusXZ,
+        camY + breathe,
         Math.cos(theta) * radiusXZ,
       );
       this.camera.lookAtTarget(0, lookY, 0);
@@ -218,13 +218,7 @@ export class AnimationSystem implements ISystem {
       const driftAngle = ctx.elapsed * 0.125;
       const radius = 7.35;
       const y = 2.15 + Math.sin(ctx.elapsed * 0.085) * 0.22;
-      const ppx = this.pointerNdcX * 0.55;
-      const ppy = this.pointerNdcY * 0.35;
-      this.camera.moveTo(
-        Math.sin(driftAngle) * radius + ppx,
-        y + ppy,
-        Math.cos(driftAngle) * radius,
-      );
+      this.camera.moveTo(Math.sin(driftAngle) * radius, y, Math.cos(driftAngle) * radius);
       this.camera.lookAtTarget(0, 1.05, 0);
       return;
     }
