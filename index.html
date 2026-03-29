@@ -224,10 +224,10 @@
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
-        padding: max(0.85rem, env(safe-area-inset-top))
-          max(1.1rem, env(safe-area-inset-right))
+        padding: max(2.9rem, calc(env(safe-area-inset-top) + 0.7rem))
+          max(80px, env(safe-area-inset-right))
           1.5rem
-          max(1.1rem, env(safe-area-inset-left));
+          max(80px, env(safe-area-inset-left));
       }
 
       .top-chrome {
@@ -247,7 +247,9 @@
         text-decoration: none;
         color: inherit;
         pointer-events: auto;
-        padding: 0.35rem 0;
+        padding: 0.14rem 0;
+        margin: 0;
+        align-self: flex-start;
       }
 
       .brand-row img {
@@ -287,168 +289,127 @@
       }
 
       .nav-stack-top-right {
+        --nav-island-w: min(78vw, 188px);
         flex: 0 0 auto;
         margin-left: auto;
         display: flex;
         flex-direction: column;
         align-items: flex-end;
+        gap: 0.48rem;
         pointer-events: none;
         position: relative;
         overflow: visible;
-      }
-
-      /* Subtle vertical “data rain” behind the pill (very low contrast). */
-      .nav-stack-top-right::before {
-        content: '';
-        position: absolute;
-        right: -12px;
-        top: -28px;
-        width: min(100vw, 340px);
-        height: 160px;
-        pointer-events: none;
-        z-index: 0;
-        opacity: 0.11;
-        background-image: repeating-linear-gradient(
-          90deg,
-          transparent 0,
-          transparent 13px,
-          color-mix(in srgb, #7fc7af 55%, transparent) 13px,
-          color-mix(in srgb, #7fc7af 55%, transparent) 14px
-        );
-        background-size: 100% 100%;
-        mask-image: radial-gradient(
-          ellipse 75% 85% at 62% 42%,
-          #000 0%,
-          transparent 68%
-        );
-        animation: nav-pill-rain 14s linear infinite;
-      }
-
-      @keyframes nav-pill-rain {
-        from {
-          background-position: 0 0;
-          opacity: 0.09;
-        }
-        50% {
-          opacity: 0.14;
-        }
-        to {
-          background-position: 0 48px;
-          opacity: 0.09;
-        }
-      }
-
-      /* Mint/teal under-glow: strongest along the bottom edge, like a light strip. */
-      .nav-pill-backlight {
-        position: absolute;
-        right: 50%;
-        bottom: -6px;
-        top: auto;
-        transform: translateX(50%);
-        width: min(135%, 400px);
-        height: 76px;
-        background: radial-gradient(
-          ellipse 92% 95% at 50% 100%,
-          color-mix(in srgb, #7fc7af 58%, transparent) 0%,
-          color-mix(in srgb, #5eead4 28%, transparent) 32%,
-          color-mix(in srgb, #0d9488 8%, transparent) 52%,
-          transparent 72%
-        );
-        filter: blur(24px);
-        opacity: 0.68;
-        pointer-events: none;
-        z-index: 0;
-        animation: nav-pill-glow-pulse 4.8s ease-in-out infinite;
-      }
-
-      @keyframes nav-pill-glow-pulse {
-        0%,
-        100% {
-          opacity: 0.5;
-          filter: blur(24px);
-        }
-        50% {
-          opacity: 0.82;
-          filter: blur(28px);
-        }
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        .nav-pill-backlight,
-        .nav-stack-top-right::before {
-          animation: none;
-        }
-
-        .nav-pill-backlight {
-          opacity: 0.62;
-          filter: blur(22px);
-        }
-
-        .nav-stack-top-right::before {
-          opacity: 0.1;
-        }
-      }
-
-      .nav-pill-morph {
-        position: relative;
-        z-index: 2;
-        width: auto;
-        max-width: min(92vw, 300px);
         transform-origin: 100% 0%;
-        transform:
-          perspective(880px)
-          rotateX(calc(-1deg - var(--nav-warp, 0) * 6.5deg))
-          skewX(calc(var(--nav-warp, 0) * 7deg * var(--nav-dir, 1)));
-        transition: transform 0.14s ease-out;
-        pointer-events: none;
+        transform: perspective(1400px)
+          skewX(calc(var(--nav-warp, 0) * 12deg * var(--nav-dir, 1)))
+          scaleX(calc(1 + var(--nav-warp, 0) * 0.022));
+        transition: transform 0.1s ease-out;
       }
 
-      .nav-pill-morph > * {
+      .nav-stack-top-right > * {
         pointer-events: auto;
       }
 
+      .nav-stack-top-right::before {
+        display: none;
+      }
+
+      /* Monochrome halo — white ink on void, no chroma. */
+      .nav-pill-morph > .nav-pill-backlight {
+        position: absolute;
+        inset: -12px -14px -12px -14px;
+        z-index: 0;
+        border-radius: 999px;
+        pointer-events: none;
+        background: radial-gradient(
+          ellipse 80% 75% at 50% 35%,
+          rgba(255, 255, 255, 0.07) 0%,
+          transparent 65%
+        );
+        opacity: 1;
+        filter: blur(26px);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .nav-stack-top-right {
+          transform: none;
+        }
+
+        .nav-pill-morph > .nav-pill-backlight {
+          filter: blur(20px);
+        }
+      }
+
+      /* B&W editorial slab: scroll shear + slight stretch only. */
+      .nav-pill-morph {
+        --nav-bw-line: #2a2a2a;
+        --nav-bw-line-soft: #3f3f3f;
+        --nav-bw-ink: #f5f5f5;
+        --nav-bw-ink-dim: #a3a3a3;
+        position: relative;
+        z-index: 2;
+        width: var(--nav-island-w);
+        min-width: var(--nav-island-w);
+        max-width: var(--nav-island-w);
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0.48rem 0.42rem 0.45rem;
+        border-radius: 999px;
+        border: 1px solid var(--nav-bw-line);
+        background: rgba(0, 0, 0, 0.58);
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.04),
+          0 20px 50px rgba(0, 0, 0, 0.55);
+        -webkit-backdrop-filter: blur(16px);
+        backdrop-filter: blur(16px);
+        overflow: visible;
+      }
+
+      .nav-pill-morph > .nav-pill-backlight {
+        pointer-events: none;
+      }
+
       .nav-pill-at {
+        position: relative;
+        z-index: 1;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 0.35rem 0.5rem;
-        padding: 0.38rem 0.85rem;
-        border-radius: 999px;
-        border: 1px solid color-mix(in srgb, #7fc7af 22%, #334155 55%);
-        background: color-mix(in srgb, #030712 88%, transparent);
-        box-shadow:
-          0 0 0 1px color-mix(in srgb, #5eead4 14%, transparent),
-          0 0 28px color-mix(in srgb, #7fc7af 22%, transparent),
-          0 14px 40px color-mix(in srgb, #000 58%, transparent),
-          inset 0 1px 0 color-mix(in srgb, #fff 4%, transparent);
-        -webkit-backdrop-filter: blur(18px);
-        backdrop-filter: blur(18px);
+        gap: 0.12rem 0.28rem;
+        padding: 0.1rem 0.06rem 0.14rem;
+        margin: 0;
+        border: none;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
       }
 
       .nav-pill-link {
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.54rem;
+        font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+        font-size: clamp(0.58rem, 1.5vw, 0.68rem);
         font-weight: 500;
-        letter-spacing: 0.22em;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: color-mix(in srgb, var(--text-primary) 90%, #cbd5e1);
+        color: var(--nav-bw-ink-dim);
         text-decoration: none;
         white-space: nowrap;
-        opacity: 0.88;
-        transition: opacity 0.25s ease, color 0.25s ease, text-shadow 0.25s ease;
+        transition: color 0.18s ease;
       }
 
       .nav-pill-link:hover {
-        opacity: 1;
-        color: #f8fafc;
-        text-shadow: 0 0 14px color-mix(in srgb, #e2e8f0 35%, transparent);
+        color: var(--nav-bw-ink);
       }
 
       .nav-flow-hit {
-        flex: 1 1 56px;
-        max-width: 118px;
-        min-width: 44px;
-        height: 26px;
+        flex: 0 0 auto;
+        width: 28px;
+        max-width: 28px;
+        min-width: 28px;
+        height: 16px;
         margin: 0;
         border: none;
         padding: 0;
@@ -457,23 +418,23 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 6px;
+        border-radius: 999px;
         pointer-events: auto;
         -webkit-tap-highlight-color: transparent;
       }
 
       .nav-flow-hit:hover {
-        background: color-mix(in srgb, #fff 5%, transparent);
+        background: rgba(255, 255, 255, 0.06);
       }
 
       .nav-flow-hit:focus-visible {
-        outline: 1px solid color-mix(in srgb, #94a3b8 70%, transparent);
+        outline: 1px solid #fff;
         outline-offset: 2px;
       }
 
       .nav-flow-wrap {
         width: 100%;
-        height: 22px;
+        height: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -482,7 +443,7 @@
 
       .nav-flow-svg {
         width: 100%;
-        height: 22px;
+        height: 12px;
         overflow: visible;
       }
 
@@ -490,80 +451,199 @@
         fill: none;
         stroke-linecap: round;
         stroke-linejoin: round;
-        transition: stroke 0.35s ease, stroke-width 0.35s ease, opacity 0.35s ease, filter 0.35s ease;
+        transition: stroke 0.35s ease, stroke-width 0.35s ease, opacity 0.35s ease;
       }
 
-      /* Idle: calm straight line (path is still driven by JS; flat when paused). */
       body:not(.music-playing) .nav-flow-svg path {
-        stroke: color-mix(in srgb, #94a3b8 88%, #e2e8f0);
-        stroke-width: 2.15;
-        opacity: 0.88;
-        filter: none;
+        stroke: #737373;
+        stroke-width: 1.65;
+        opacity: 0.85;
       }
 
       body.music-playing .nav-flow-svg path {
         stroke: url(#nav-flow-grad);
-        stroke-width: 1.25;
-        filter: drop-shadow(0 0 6px color-mix(in srgb, #f1f5f9 45%, transparent));
+        stroke-width: 1.15;
+        opacity: 0.95;
       }
 
-      .nav-mini-player {
-        margin-top: 0.45rem;
+      .nav-player-wrap {
+        display: none;
+        position: relative;
+        z-index: 2;
+        width: var(--nav-island-w);
+        min-width: var(--nav-island-w);
+        max-width: var(--nav-island-w);
+        box-sizing: border-box;
+        padding: 0.4rem 0.38rem 0.38rem;
+        border-radius: 999px;
+        border: 1px solid #2a2a2a;
+        background: rgba(0, 0, 0, 0.58);
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.04),
+          0 16px 40px rgba(0, 0, 0, 0.5);
+        -webkit-backdrop-filter: blur(16px);
+        backdrop-filter: blur(16px);
+      }
+
+      body.music-playing .nav-player-wrap {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 0.65rem;
-        padding: 0.38rem 0.65rem;
-        border-radius: 10px;
-        border: 1px solid color-mix(in srgb, #fff 16%, transparent);
-        outline: 1px solid color-mix(in srgb, #fff 8%, transparent);
-        outline-offset: 2px;
-        background: color-mix(in srgb, #020617 72%, transparent);
-        opacity: 0.48;
-        transform: translateY(0) scale(1);
-        max-height: 56px;
-        pointer-events: auto;
-        transition:
-          opacity 0.4s ease,
-          border-color 0.35s ease,
-          transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
       }
 
-      body.audio-active .nav-mini-player {
+      .nav-mini-player {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.32rem;
+        padding: 0.12rem 0.08rem;
+        border: none;
+        border-radius: 0;
+        outline: none;
+        background: transparent;
         opacity: 1;
-        border-color: color-mix(in srgb, #fff 26%, transparent);
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+        min-height: 2rem;
+        height: auto;
+        box-sizing: border-box;
+        flex-shrink: 0;
       }
 
       .nav-mini-btn {
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.62rem;
-        width: 1.65rem;
-        height: 1.65rem;
+        font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+        font-size: 0.46rem;
+        width: 1.28rem;
+        height: 1.28rem;
         display: grid;
         place-items: center;
-        border: 1px solid color-mix(in srgb, #fff 28%, transparent);
-        border-radius: 4px;
+        border: 1px solid var(--nav-bw-line-soft);
+        border-radius: 999px;
         background: transparent;
-        color: var(--text-primary);
+        color: var(--nav-bw-ink-dim);
         cursor: pointer;
         line-height: 1;
-        transition: border-color 0.2s ease, background 0.2s ease;
+        transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
       }
 
       .nav-mini-btn:hover {
-        border-color: color-mix(in srgb, #22d3ee 55%, #fff);
-        background: color-mix(in srgb, #22d3ee 12%, transparent);
+        border-color: #737373;
+        color: var(--nav-bw-ink);
+        background: rgba(255, 255, 255, 0.05);
       }
 
-      .nav-mini-meta {
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.54rem;
-        letter-spacing: 0.14em;
-        color: color-mix(in srgb, var(--text-primary) 85%, #cbd5e1);
-        white-space: nowrap;
-        max-width: 10rem;
+      .nav-mini-info {
+        flex: 1;
+        min-width: 0;
+        align-self: stretch;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .nav-mini-mq.nav-mini-mq--title {
+        flex: 1;
+        min-width: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+      }
+
+      .nav-mini-mq {
+        min-height: 0;
+      }
+
+      .nav-mini-mq-active .nav-mini-mq-view {
+        justify-content: flex-start;
+        align-items: center;
+        mask-image: linear-gradient(
+          90deg,
+          transparent 0%,
+          #000 5%,
+          #000 95%,
+          transparent 100%
+        );
+        -webkit-mask-image: linear-gradient(
+          90deg,
+          transparent 0%,
+          #000 5%,
+          #000 95%,
+          transparent 100%
+        );
+      }
+
+      .nav-mini-mq-view {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         overflow: hidden;
-        text-overflow: ellipsis;
+        width: 100%;
+        min-height: 0;
+        flex: 1;
+        mask-image: none;
+        -webkit-mask-image: none;
+      }
+
+      .nav-mini-mq:not(.nav-mini-mq-active) .nav-mini-mq-view {
+        justify-content: center;
+        align-items: center;
+      }
+
+      .nav-mini-mq-track {
+        display: inline-flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        white-space: nowrap;
+        width: max-content;
+        max-height: 100%;
+        will-change: transform;
+      }
+
+      .nav-mini-mq-active .nav-mini-mq-track {
+        animation: navMiniMarquee var(--mq-dur, 14s) linear infinite;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .nav-mini-mq-active .nav-mini-mq-track {
+          animation: none;
+          transform: none;
+        }
+      }
+
+      @keyframes navMiniMarquee {
+        0% {
+          transform: translateX(0);
+        }
+        100% {
+          transform: translateX(-50%);
+        }
+      }
+
+      .nav-mini-mq-seg {
+        flex-shrink: 0;
+        display: inline-flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 0;
+        padding-right: 2rem;
+        font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+        font-size: clamp(0.58rem, 1.75vw, 0.74rem);
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        line-height: 1.3;
+        text-transform: uppercase;
+        color: #f5f5f5;
+      }
+
+      .nav-mini-mq-credit-part {
+        font-weight: 400;
+        color: #737373;
       }
 
       /* Virtual scroll */
@@ -948,7 +1028,10 @@
 
       @media (max-width: 768px) {
         #ui-layer {
-          padding: max(0.75rem, env(safe-area-inset-top)) 0.85rem 1rem;
+          padding: max(2.7rem, calc(env(safe-area-inset-top) + 0.6rem))
+            max(80px, env(safe-area-inset-right))
+            1rem
+            max(80px, env(safe-area-inset-left));
         }
         .top-chrome {
           flex-wrap: wrap;
@@ -958,17 +1041,33 @@
           align-items: flex-end;
         }
         .nav-pill-morph {
-          max-width: min(100%, 280px);
+          --nav-island-w: min(72vw, 176px);
+          width: var(--nav-island-w);
+          min-width: var(--nav-island-w);
+          max-width: var(--nav-island-w);
+          padding: 0.42rem 0.36rem 0.4rem;
+          border-radius: 999px;
         }
         .nav-pill-at {
-          padding: 0.34rem 0.72rem;
+          padding: 0.06rem 0.02rem 0.12rem;
+          gap: 0.08rem 0.22rem;
+        }
+        .nav-player-wrap {
+          padding: 0.34rem 0.32rem 0.32rem;
         }
         .nav-pill-link {
-          font-size: 0.52rem;
-          letter-spacing: 0.16em;
+          font-size: clamp(0.5rem, 3.1vw, 0.58rem);
+          letter-spacing: 0.1em;
         }
         .nav-flow-hit {
-          max-width: 96px;
+          width: 26px;
+          max-width: 26px;
+          min-width: 26px;
+          height: 14px;
+        }
+        .nav-flow-wrap,
+        .nav-flow-svg {
+          height: 11px;
         }
       }
 
@@ -1661,8 +1760,8 @@
         </a>
 
         <div class="nav-stack-top-right">
-          <div class="nav-pill-backlight" aria-hidden="true"></div>
           <div class="nav-pill-morph">
+            <div class="nav-pill-backlight" aria-hidden="true"></div>
             <header class="nav-pill-at">
               <a class="nav-pill-link" href="#">Work</a>
               <button
@@ -1671,17 +1770,17 @@
                 id="nav-audio-toggle"
                 aria-label="Play or pause soundtrack"
                 aria-pressed="false"
-                title="Idle: straight line. Playing: live waveform. Side curtains pulse with the track."
+                title="Idle: static wave. Playing: live waveform. Side curtains pulse with the track."
               >
                 <span class="nav-flow-wrap">
                   <svg class="nav-flow-svg" viewBox="0 0 220 24" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
                     <defs>
                       <linearGradient id="nav-flow-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="#f8fafc" stop-opacity="0.82"/>
-                        <stop offset="42%" stop-color="#a7f3d0" stop-opacity="0.55"/>
-                        <stop offset="50%" stop-color="#ecfdf5" stop-opacity="0.95"/>
-                        <stop offset="58%" stop-color="#a7f3d0" stop-opacity="0.55"/>
-                        <stop offset="100%" stop-color="#e2e8f0" stop-opacity="0.88"/>
+                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.88"/>
+                        <stop offset="35%" stop-color="#a3a3a3" stop-opacity="0.75"/>
+                        <stop offset="50%" stop-color="#fafafa" stop-opacity="0.95"/>
+                        <stop offset="65%" stop-color="#a3a3a3" stop-opacity="0.75"/>
+                        <stop offset="100%" stop-color="#e5e5e5" stop-opacity="0.85"/>
                       </linearGradient>
                     </defs>
                     <path id="nav-flow-path" d="M 0 12 L 220 12" />
@@ -1690,9 +1789,17 @@
               </button>
               <a class="nav-pill-link" href="#">Contact</a>
             </header>
+          </div>
+          <div class="nav-player-wrap" id="nav-player-wrap" aria-hidden="true">
             <div class="nav-mini-player" id="nav-mini" aria-label="Track controls">
               <button type="button" class="nav-mini-btn" id="nav-mini-prev" aria-label="Previous track">⟨⟨</button>
-              <span class="nav-mini-meta" id="nav-mini-meta">—</span>
+              <div class="nav-mini-info" id="nav-mini-info">
+                <div class="nav-mini-mq nav-mini-mq--title" id="nav-mini-wrap-title">
+                  <div class="nav-mini-mq-view" id="nav-mini-title-view">
+                    <div class="nav-mini-mq-track" id="nav-mini-title-track"></div>
+                  </div>
+                </div>
+              </div>
               <button type="button" class="nav-mini-btn" id="nav-mini-next" aria-label="Next track">⟩⟩</button>
             </div>
           </div>

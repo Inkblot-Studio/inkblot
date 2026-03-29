@@ -24,18 +24,18 @@ interface CurtainWave {
 }
 
 function countForLod(lod: BloomLod): number {
-  if (lod === 'low') return 900;
-  if (lod === 'medium') return 1400;
-  return 2200;
+  if (lod === 'low') return 1100;
+  if (lod === 'medium') return 1700;
+  return 2600;
 }
 
 function halfCount(lod: BloomLod): number {
   return Math.max(48, Math.floor(countForLod(lod) / 2));
 }
 
-/** NDC x magnitude for curtain strip (near ±1 = true screen edge). */
-const NDC_MIN = 0.88;
-const NDC_MAX = 0.985;
+/** NDC x magnitude — wider soft band so vignette map can feather inward. */
+const NDC_MIN = 0.76;
+const NDC_MAX = 0.992;
 
 const vert = `
 attribute float aSeed;
@@ -53,16 +53,26 @@ void main() {
   float y = position.y;
   float z = position.z;
   float d = -z;
+
+  /* Normalized vertical coord for gentle S-curve in/out from edge */
+  float yn = clamp(y * 0.36, -1.0, 1.0);
+  float sEase = yn * yn * (3.0 - 2.0 * abs(yn)) * sign(max(abs(yn), 1e-5));
+  float sWave = sin(3.14159265 * yn + aSeed * 5.1 + uTime * 0.045) * 0.55
+      + 0.45 * sin(1.5707963 * yn * 2.0 + aSeed * 2.8);
+  float bendNdc = 0.052 * sEase + 0.038 * sWave;
+  ndcX += bendNdc * sign(ndcX);
+  ndcX = clamp(ndcX, -0.995, 0.995);
+
   float xe = ndcX * d * uTanHalfFov * uAspect;
 
-  float w = uTime * 0.07;
-  xe += sin(w + aSeed * 6.2831853) * 0.004 * d;
-  y += cos(w * 0.86 + aSeed * 4.13) * 0.003 * d;
+  float w = uTime * 0.055;
+  xe += sin(w + aSeed * 6.2831853) * 0.0022 * d;
+  y += cos(w * 0.86 + aSeed * 4.13) * 0.0018 * d;
 
   vec4 mv = modelViewMatrix * vec4(xe, y, z, 1.0);
   vec4 clip = projectionMatrix * mv;
   vNdc = clip.xy / clip.w;
-  gl_PointSize = mix(1.4, 3.2, aSeed) * (140.0 / max(-mv.z, 0.25));
+  gl_PointSize = mix(0.55, 1.15, aSeed) * (58.0 / max(-mv.z, 0.25));
   gl_Position = clip;
 }
 `;
@@ -115,10 +125,23 @@ void main() {
   vec2 c = gl_PointCoord - 0.5;
   float pr = length(c) * 2.0;
   if (pr > 1.0) discard;
-  float disc = smoothstep(1.0, 0.25, pr);
+  float disc = smoothstep(1.0, 0.62, pr);
 
-  /* Hard gate: only draw in outer screen strips (no central "pillows"). */
-  if (abs(vNdc.x) < 0.72) discard;
+  /* Soft vignette rim: Hermite Ease + edge band — no hard cut */
+  vec2 p = vec2(vNdc.x * uAspect, vNdc.y);
+  float radial = length(p);
+  float uR = clamp((radial - 0.34) / 0.56, 0.0, 1.0);
+  float rimRadial = uR * uR * (3.0 - 2.0 * uR);
+  float ax = abs(vNdc.x);
+  float ay = abs(vNdc.y);
+  float edgeMix = max(ax * 0.9, pow(ay, 1.12));
+  float rimEdge = smoothstep(0.48, 0.94, edgeMix);
+  float rim = clamp(rimRadial * 0.5 + rimEdge * 0.72, 0.0, 1.0);
+
+  /* Vertical S-shaped density along the curtain (grain follows curve) */
+  float sDen = 0.58 + 0.42 * sin(3.14159265 * vNdc.y * 1.2 + vSeed * 6.2831853);
+  sDen *= 0.72 + 0.28 * sin(1.5707963 * vNdc.y * 2.4 + vSeed * 3.7 + uTime * 0.12);
+  rim *= sDen;
 
   vec2 q = vNdc;
   q.x *= uAspect;
@@ -226,7 +249,7 @@ void main() {
   float env = best * mix(0.55, 1.0, uBeatEnvelope);
 
   vec3 col = uBaseDark;
-  float a = uBaseAlpha * disc * (0.55 + 0.45 * abs(vNdc.x));
+  float a = uBaseAlpha * disc * (0.45 + 0.55 * abs(vNdc.x)) * rim;
 
   if (uMusicOn > 0.5) {
     vec3 lit = mix(gold * 0.45, bestRgb, env);
@@ -235,6 +258,7 @@ void main() {
     a = mix(a, min(0.55, a + 0.35 * mixAmt), mixAmt);
   }
 
+  if (a < 0.0035) discard;
   gl_FragColor = vec4(col, a);
 }
 `;
@@ -324,7 +348,7 @@ export class SideCurtainParticlesComponent implements IComponent {
         uWave5: { value: this.waveUniforms[5] },
         uWave6: { value: this.waveUniforms[6] },
         uWave7: { value: this.waveUniforms[7] },
-        uBaseAlpha: { value: this.lod === 'low' ? 0.07 : 0.09 },
+        uBaseAlpha: { value: this.lod === 'low' ? 0.095 : 0.12 },
       },
       transparent: true,
       depthTest: false,

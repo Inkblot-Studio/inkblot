@@ -3,6 +3,8 @@ import { damp } from '@/utils/math';
 
 export interface MusicTrack {
   label: string;
+  /** Composer / performer / rights line for the UI */
+  artist: string;
   src: string;
   loop?: boolean;
 }
@@ -10,11 +12,13 @@ export interface MusicTrack {
 const MUSIC_LIBRARY: MusicTrack[] = [
   {
     label: 'Blue Moon',
+    artist: 'Richard Rodgers & Lorenz Hart',
     src: `/music/${encodeURIComponent('Blue Moon.mp3')}`,
     loop: true,
   },
   {
     label: 'Sentimental Jazzy Love',
+    artist: 'Sonican',
     src: '/music/sonican-lo-fi-music-loop-sentimental-jazzy-love-473154.mp3',
     loop: true,
   },
@@ -92,6 +96,10 @@ export class AudioSystem implements ISystem {
 
   getCurrentTrackLabel(): string {
     return this.tracks[this.trackIndex]?.label ?? '—';
+  }
+
+  getCurrentTrackArtist(): string {
+    return this.tracks[this.trackIndex]?.artist ?? '';
   }
 
   nextTrack(): void {
