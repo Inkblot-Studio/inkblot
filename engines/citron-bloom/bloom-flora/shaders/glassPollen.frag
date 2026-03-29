@@ -58,15 +58,20 @@ void main() {
   float haloR = max(uEmergeRadii.z, budR);
   float radialT = mix(budR, haloR, vSpreadTe);
   float extentVsFlower = radialT / flowerR;
-  float emerge = smoothstep(0.06, 1.02, extentVsFlower);
+  /* No visibility until well past bud — avoids dark micro-dots at rest */
+  float emerge = smoothstep(0.14, 1.02, extentVsFlower);
   emerge = emerge * emerge * (3.0 - 2.0 * emerge);
-  float shellVis = emerge;
+  float openGate = smoothstep(0.05, 0.16, vSpreadTe);
+  openGate *= openGate;
+  float shellVis = emerge * openGate;
 
-  col *= mix(0.12, 1.0, shellVis);
+  col *= shellVis;
 
   float alpha = mix(0.58, 0.94, 1.0 - fresnel * 0.35);
   alpha = mix(alpha, min(alpha + 0.08, 1.0), bb * 0.3);
   alpha *= uOpacity * (0.9 + 0.1 * layerF) * shellVis;
+
+  if (alpha < 0.003) discard;
 
   gl_FragColor = vec4(col, alpha);
 }
