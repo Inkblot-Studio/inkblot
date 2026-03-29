@@ -2,12 +2,15 @@ uniform float uBloom;
 uniform sampler2D uEnvMap;
 uniform float uEnvMapIntensity;
 uniform float uOpacity;
+/** x = bud radius, y = flower head ref radius, z = pollen halo max (local space) */
+uniform vec3 uEmergeRadii;
 
 varying vec3 vWorldNormal;
 varying vec3 vViewDir;
 varying vec4 vSeed;
 varying float vLayer;
 varying vec3 vColor;
+varying float vSpreadTe;
 
 #include "./heroGlassEnv.glsl"
 
@@ -49,9 +52,21 @@ void main() {
   col += vec3(0.14, 0.42, 0.72) * fresnel * 0.22;
 
   float layerF = vLayer * 0.5;
+  /* Approx cloud radius vs open flower: full opacity only near / past flower head size */
+  float budR = max(uEmergeRadii.x, 1e-4);
+  float flowerR = max(uEmergeRadii.y, 1e-4);
+  float haloR = max(uEmergeRadii.z, budR);
+  float radialT = mix(budR, haloR, vSpreadTe);
+  float extentVsFlower = radialT / flowerR;
+  float emerge = smoothstep(0.06, 1.02, extentVsFlower);
+  emerge = emerge * emerge * (3.0 - 2.0 * emerge);
+  float shellVis = emerge;
+
+  col *= mix(0.12, 1.0, shellVis);
+
   float alpha = mix(0.58, 0.94, 1.0 - fresnel * 0.35);
   alpha = mix(alpha, min(alpha + 0.08, 1.0), bb * 0.3);
-  alpha *= uOpacity * (0.9 + 0.1 * layerF);
+  alpha *= uOpacity * (0.9 + 0.1 * layerF) * shellVis;
 
   gl_FragColor = vec4(col, alpha);
 }

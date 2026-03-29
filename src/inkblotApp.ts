@@ -506,9 +506,11 @@ export class Inkblot {
 
     if (this.citronBloomComponent && this.useCitronBloom && this.activeBloomExperienceId === 'flower') {
       const j = resolveJourney(this.scrollSystem.progress);
-      /** No pollen at document top; gentle reveal and fade before act 0 ends. */
-      const scrollReveal = smoothstep(0.006, 0.08, j.globalT);
-      const sectionTail = j.section === 0 ? 1 - smoothstep(0.62, 0.97, j.localT) : 0;
+      /**
+       * scrollReveal: long ease near document top so a fast scroll-up doesn’t slam gate (and pollen) to 0.
+       */
+      const scrollReveal = smoothstep(0.0, 0.12, j.globalT);
+      const sectionTail = j.section === 0 ? 1 - smoothstep(0.55, 0.94, j.localT) : 0;
       const gate01 = sectionTail * scrollReveal;
       /**
        * Drive pollen intensity on act-0 local progress [0,1], not full-page scroll.
