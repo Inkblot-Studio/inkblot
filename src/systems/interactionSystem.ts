@@ -32,8 +32,15 @@ export class InteractionSystem implements ISystem {
   private readonly prevRawPointer = new Vector2(0, 0);
   private hasPrevRaw = false;
 
+  /**
+   * Decaying boost in the same units as {@link pointerVelocityRaw} (NDC-equivalent / sec),
+   * driven by wheel so the liquid ribbon can show during scroll without pointer motion.
+   */
+  private scrollRibbonBoost = 0;
+
   init(_ctx: FrameContext): void {
     window.addEventListener('pointermove', this.onPointerMove, { passive: true });
+    window.addEventListener('wheel', this.onWheel, { passive: true });
   }
 
   update(ctx: FrameContext): void {
@@ -58,17 +65,41 @@ export class InteractionSystem implements ISystem {
     }
     this.prevRawPointer.copy(this.rawPointer);
     this.hasPrevRaw = true;
-    this.pointerVelocityRaw = damp(this.pointerVelocityRaw, rawVel, 8, ctx.delta);
+
+    const targetVel = Math.max(rawVel, this.scrollRibbonBoost);
+    this.pointerVelocityRaw = damp(this.pointerVelocityRaw, targetVel, 8, ctx.delta);
+    this.scrollRibbonBoost *= Math.exp(-12 * ctx.delta);
 
     this.raycaster.setFromCamera(this.pointer, ctx.camera);
   }
 
   dispose(): void {
     window.removeEventListener('pointermove', this.onPointerMove);
+    window.removeEventListener('wheel', this.onWheel);
   }
 
   private onPointerMove = (e: PointerEvent): void => {
     this.rawPointer.x = (e.clientX / window.innerWidth) * 2 - 1;
     this.rawPointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  };
+
+  private onWheel = (e: WheelEvent): void => {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    let dx = e.deltaX;
+    let dy = e.deltaY;
+    if (e.deltaMode === 1) {
+      dx *= 16;
+      dy *= 16;
+    } else if (e.deltaMode === 2) {
+      dx *= w;
+      dy *= h;
+    }
+    const ndcX = (dx / Math.max(w, 1)) * 2;
+    const ndcY = (dy / Math.max(h, 1)) * 2;
+    const ndcMag = Math.hypot(ndcX, ndcY);
+    /** Same order of magnitude as pointer rawVel (NDC change per frame / dt). */
+    const scrollAsVel = Math.min(ndcMag * 72, 22);
+    this.scrollRibbonBoost = Math.max(this.scrollRibbonBoost, scrollAsVel);
   };
 }
