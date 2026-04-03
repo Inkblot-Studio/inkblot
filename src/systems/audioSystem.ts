@@ -9,17 +9,25 @@ export interface MusicTrack {
   loop?: boolean;
 }
 
+/** Files in `public/music/copyright/` → `/music/copyright/…` (encode filenames with spaces/parens). */
+function copyrightTrack(file: string): string {
+  return `/music/copyright/${encodeURIComponent(file)}`;
+}
+
+/** Peak output vs full-scale (0–1). 0.5 = 50% quieter than unity. */
+const MASTER_OUTPUT_PEAK = 0.5;
+
 const MUSIC_LIBRARY: MusicTrack[] = [
   {
-    label: 'Blue Moon',
-    artist: 'Inkblot Studio',
-    src: `/music/${encodeURIComponent('Blue Moon.mp3')}`,
+    label: 'Everything In Its Right Place',
+    artist: 'Alexandra Fever',
+    src: copyrightTrack('Alexandra Fever - Everything In Its Right Place (SPOTISAVER).mp3'),
     loop: true,
   },
   {
-    label: 'Sentimental Jazzy Love',
-    artist: 'Sonican',
-    src: '/music/sonican-lo-fi-music-loop-sentimental-jazzy-love-473154.mp3',
+    label: 'Ascension',
+    artist: 'Jason Fervento',
+    src: copyrightTrack('Jason Fervento - Ascension (SPOTISAVER).mp3'),
     loop: true,
   },
 ];
@@ -145,7 +153,7 @@ export class AudioSystem implements ISystem {
         this.isPlaying = false;
         return;
       }
-      this.masterGain.gain.linearRampToValueAtTime(1.0, now + 0.85);
+      this.masterGain.gain.linearRampToValueAtTime(MASTER_OUTPUT_PEAK, now + 0.85);
     } else {
       this.mediaEl.pause();
       this.masterGain.gain.linearRampToValueAtTime(0.01, now + 0.45);
