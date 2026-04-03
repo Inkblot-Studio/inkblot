@@ -68,6 +68,12 @@ function updateMiniPlayerCredits(audio: AudioSystem): void {
 const DECK_CX = 28;
 const DECK_CY = 28;
 
+/** Integrated angle (deg) — avoids “skipping” when speed follows analyser each frame. */
+let deckAngleDeg = 0;
+/** Smoothed RPM factor so angular acceleration stays gentle. */
+let deckSpeedSmoothed = 48;
+let petalPulseSmoothed = 0.26;
+
 function prefersReducedMotion(): boolean {
   return (
     typeof window.matchMedia === 'function' &&
@@ -75,23 +81,23 @@ function prefersReducedMotion(): boolean {
   );
 }
 
-/** Floral “platter” rotation — faster + bass-weighted when playing; flutter from treble. */
-function deckRotationDeg(
-  elapsed: number,
-  low: number,
-  high: number,
+function advanceDeckAngleDeg(
   playing: boolean,
   reducedMotion: boolean,
+  delta: number,
+  low: number,
+  high: number,
 ): number {
+  const dt = Math.min(Math.max(delta, 0), 0.05);
   if (!playing) {
+    deckAngleDeg = 0;
+    deckSpeedSmoothed = 48;
     return 0;
   }
-  if (reducedMotion) {
-    return elapsed * 18;
-  }
-  const speed = 56 * (1 + low * 0.55 + high * 0.14);
-  const flutter = Math.sin(elapsed * 15.2) * high * 3.2;
-  return elapsed * speed + flutter;
+  const targetSpeed = reducedMotion ? 17 : 48 * (1 + low * 0.4 + high * 0.07);
+  deckSpeedSmoothed += (targetSpeed - deckSpeedSmoothed) * Math.min(1, dt * 7);
+  deckAngleDeg += deckSpeedSmoothed * dt;
+  return deckAngleDeg;
 }
 
 export function initNavChrome(audio: AudioSystem): void {
@@ -150,7 +156,7 @@ export function updateCustomScrollThumb(): void {
 export function updateNavChrome(
   audio: AudioSystem,
   scroll: ScrollSystem,
-  elapsed: number,
+  delta: number,
 ): void {
   const root = document.documentElement;
   const warp = Math.min(scroll.velocityPxPerSec / 3800, 1);
@@ -165,18 +171,33 @@ export function updateNavChrome(
   }
 
   const audioToggle = document.getElementById('nav-audio-toggle');
+  const d = Math.min(Math.max(delta, 0), 0.05);
   if (audioToggle) {
     audioToggle.setAttribute('aria-pressed', audio.isPlaying ? 'true' : 'false');
+    if (audio.isPlaying) {
+      const rawPetal = Math.min(
+        1,
+        0.18 +
+          audio.lowFrequencyVolume * 0.68 +
+          audio.beatEnvelope * 0.92 +
+          audio.highFrequencyVolume * 0.16,
+      );
+      petalPulseSmoothed += (rawPetal - petalPulseSmoothed) * Math.min(1, d * 14);
+      audioToggle.style.setProperty('--nav-petal-pulse', petalPulseSmoothed.toFixed(3));
+    } else {
+      petalPulseSmoothed += (0.24 - petalPulseSmoothed) * Math.min(1, d * 8);
+      audioToggle.style.setProperty('--nav-petal-pulse', petalPulseSmoothed.toFixed(3));
+    }
   }
 
   const deckRot = document.getElementById('nav-deck-rot');
   if (deckRot) {
-    const deg = deckRotationDeg(
-      elapsed,
-      audio.lowFrequencyVolume,
-      audio.highFrequencyVolume,
+    const deg = advanceDeckAngleDeg(
       audio.isPlaying,
       prefersReducedMotion(),
+      delta,
+      audio.lowFrequencyVolume,
+      audio.highFrequencyVolume,
     );
     deckRot.setAttribute('transform', `rotate(${deg} ${DECK_CX} ${DECK_CY})`);
   }

@@ -18,31 +18,32 @@ When the recording and this doc disagree, **trust the recording for feel** and *
 - **Base**: Near-black cinematic UI (`--background` ~`#020617`), high contrast type, restrained chrome.
 - **Accents**: Teal / cyan (`#22d3ee`, ice gradients) + soft violet in backlights (`#a78bfa` mixes) — “premium dark mode,” not flat corporate blue.
 - **3D / post** (bloom mode): Heavy but tasteful **bloom**, **subtle film grain** (`FilmPass`), **cool grade** — see `engines/citron-bloom/bloom-postprocess/citronBloomComposer.ts`.
-- **Typography**: **IBM Plex Mono** for HUD-style nav + mini player; **Outfit** (primary) + **Fraunces** italic (e.g. “Studio”) for brand wordmark; story panels use Outfit headings + body (`index.html`).
+- **Typography**: **IBM Plex Mono** for nav pill + mini-player marquee + transport; **Outfit** (primary) + **Fraunces** italic (e.g. “Studio”) for brand wordmark; **Syne** for Citron Bloom **`.scroll-hint`**; story panels use Outfit headings + body (`index.html`).
 
 ## Top navigation pill (`index.html` + `src/ui/navChrome.ts`)
 
-- **Shape**: Horizontal **stadium pill** (`.nav-pill-morph`), glass fill, **accent-tinted border** from shared tokens on `.nav-stack-top-right`. **No animated rim on the pill** — ornament lives **outside** as **`.nav-flora-aura`** (**`z-index: 6`**, above the opaque pill so it’s visible), **accent drop-shadow**, **nyctinasty breathe** (`navFloraRespire`) + **heliotrope lean** from scroll. **`pointer-events: none`** so it never blocks the pill. Reduced motion = breathe off, steadier opacity.
+- **Shape**: Horizontal **stadium pill** (`.nav-pill-morph`). **Fill**: single semi-transparent **`--nav-glass-fill`** (no accent gradient overlay). **Border**: **one** `1px` edge only — `color-mix(in srgb, var(--border) 50%, transparent)` (half opacity of page `--border`, i.e. 2× more transparent than solid `#1E293B`). **No** duplicate `box-shadow` ring. **Island width** ~`min(78vw, 218px)` desktop / **`min(72vw, 202px)`** narrow; **`--nav-player-w`** = **`calc(var(--nav-island-w) * 0.528)`** (~10% wider strip vs prior 48%). **No** separate `.nav-flora-aura` cluster — flora is **only** the center SVG control.
 - **Placement**: Pill stack is **top-right** (`.nav-stack-top-right`, `margin-left: auto`); brand stays **top-left**. No hamburger — WORK / CONTACT always visible.
-- **Labels**: **JetBrains Mono** / **IBM Plex Mono**, small caps, wide letter-spacing; ink from `--nav-ink` / `--nav-ink-dim` (readable on glass). **Work / Contact** links have **no hover chrome** (no background or glow on `:hover`).
+- **Labels**: **JetBrains Mono** / **IBM Plex Mono**, small caps, wide letter-spacing; ink from `--nav-ink` / `--nav-ink-dim`. **Work / Contact** have **no hover chrome** (no background or glow on `:hover`).
 - **Scroll “wind”**: CSS vars `--nav-warp` [0,1], `--nav-dir` ±1 — drive **`perspective(1400px) rotateX translateY skewX scaleX`** on **`.nav-stack-top-right`** from **scroll speed** (`ScrollSystem.velocityPxPerSec`, `updateNavChrome`). Transform origin **top-right** (`100% 0%`). `prefers-reduced-motion` clears the transform.
-- **Scene tint (flower journey)**: When **`body.journey-flower-active`**, `--nav-accent` / `--nav-accent-2` track **`--journey-rail`** (per `data-journey-section`) so rim, glow, waveform gradient, and mini player chrome **follow the act**. Default showcase accent is ice/cyan + violet mix when not on flower journey.
+- **Scene tint (flower journey)**: When **`body.journey-flower-active`**, `--nav-accent` / `--nav-accent-2` track **`--journey-rail`** so **petal gradients** and mini player chrome **follow the act**. Default showcase accent is ice/cyan + violet mix when not on flower journey.
 - **Audio**: Toggle is **`#nav-audio-toggle`** wrapping the center flow SVG (`initNavChrome` → `audio.toggleAudio()`). `aria-pressed` synced in `updateNavChrome`.
-- **Center audio control (“petal platter”)**: Square **`viewBox="0 0 56 56"`** `.nav-flow-svg` — **vinyl disc**, **six petal ellipses** on **`#nav-deck-rot`**, **label** + **spindle**; **fixed tonearm** + pivot (does not spin). `updateNavChrome` sets **`#nav-deck-rot`** `transform="rotate(…)"` via `deckRotationDeg` (faster + bass-weighted when playing, treble flutter; **stopped when idle**; reduced motion = slow spin only while playing). Hit target ~**28×28** desktop / **26×26** mobile.
-- **Mini player**: **Separate** block **`#nav-player-wrap`**, **only when playing** (`body.music-playing` / `audio-active`): narrower than pill (~⅔ width), **larger vertical gap** from the nav pill, **rounded-rectangle** (~10px radius) with **lighter / more transparent** glass than the pill so it reads as a secondary strip; **opacity** dips when visible, **hover/focus-within** ramps up for control. Transport buttons use **small radius** (~6px), not stadium pills. `⟨⟨` / `⟩⟩`, marquee title from `AudioSystem`; prev/next → `prevTrack` / `nextTrack`.
+- **Center audio control (floral)**: Square **`viewBox="0 0 56 56"`** — **six petals** + soft **`nav-floral-core`** heart on **`#nav-deck-rot`** (no vinyl, grooves, tonearm, or outer deck chrome). Rotation: **`updateNavChrome`** integrates angle with **`frameContext.delta`** + smoothed speed. **`--nav-petal-pulse`** drives **`.nav-deck-petals`** and **`.nav-floral-heart`** (brightness). Hit ~**31×31** / mobile **29×29**.
+- **Mini player**: **Separate** block **`#nav-player-wrap`**, **only when playing** (`body.music-playing` / `audio-active`): narrower than pill (~**53%** width), **larger vertical gap** from the nav pill, **rounded-rectangle** (~10px radius) with **lighter / more transparent** glass than the pill so it reads as a secondary strip; **opacity** dips when visible, **hover/focus-within** ramps up for control. Transport buttons use **small radius** (~6px), not stadium pills. `⟨⟨` / `⟩⟩`, marquee title from `AudioSystem`; prev/next → `prevTrack` / `nextTrack`.
 
 ## Custom scroll thumb (`index.html` + `updateCustomScrollThumb`)
 
 - **Native scrollbars**: Hidden on `html` / `body` (Firefox + WebKit).
 - **Placement**: Fixed **right edge**, `z-index: 14`, respects **safe-area**.
 - **Divider**: 1px **near-black** vertical line (`.custom-scroll-edge`) — thumb sits **on** the edge axis.
-- **Thumb**: ~**3px** wide, **pill** (`border-radius: 999px`), **off-white** (slight slate mix), **min height ~20px**, height ∝ viewport/document ratio (long page → shorter thumb), position from `scrollY / maxScroll`. Fade out when there is nothing to scroll.
+- **Rail**: fixed strip **`~12px`** wide. **Thumb**: ~**8px** wide, **pill** (`border-radius: 999px`), **off-white** (slight slate mix), **min height ~20px**, height ∝ viewport/document ratio (long page → shorter thumb), position from `scrollY / maxScroll`. Fade out when there is nothing to scroll.
 
 ## Page shell vs 3D
 
 - **Canvas**: Fixed full-viewport, low z-index; **interaction layer** above for pointer.
 - **UI layer**: Mostly `pointer-events: none` with targeted `auto` on interactive nodes.
 - **Bloom story copy**: Scroll-synced DOM panels (`#bloom-story`, `--bloom-scroll`); hidden for `?experience=stomp` and non–bloom modes (`body` classes in `inkblotApp.ts`).
+- **Bloom scroll cue**: Fixed bottom **`.scroll-hint`** (Citron Bloom only) — **Scroll down** in **Syne** **500**, uppercase, wide tracking; **max opacity 0.7** (times scroll fade from **`--scroll-raw`**); bright ice text + soft cyan glow for legibility.
 
 ## Citron Bloom experiences (`engines/citron-bloom/bloom-runtime/`)
 

@@ -506,7 +506,7 @@ export class Inkblot {
 
     this.animationSystem.update(this.frameContext);
     this.audioSystem.update(this.frameContext);
-    updateNavChrome(this.audioSystem, this.scrollSystem, elapsed);
+    updateNavChrome(this.audioSystem, this.scrollSystem, this.frameContext.delta);
 
     if (
       this.citronBloomComponent &&

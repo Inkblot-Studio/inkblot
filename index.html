@@ -143,7 +143,7 @@
         position: fixed;
         top: 0;
         right: 0;
-        width: 10px;
+        width: 12px;
         height: 100dvh;
         max-height: 100vh;
         z-index: 14;
@@ -176,8 +176,8 @@
         position: absolute;
         left: 50%;
         top: 0;
-        width: 3px;
-        margin-left: -1.5px;
+        width: 8px;
+        margin-left: -4px;
         border-radius: 999px;
         background: color-mix(in srgb, #e8eaef 92%, #94a3b8);
         min-height: 20px;
@@ -289,17 +289,15 @@
       }
 
       .nav-stack-top-right {
-        --nav-island-w: min(78vw, 188px);
+        --nav-island-w: min(78vw, 218px);
         --nav-island-min-h: 2.95rem;
-        --nav-player-w: calc(var(--nav-island-w) * 0.48);
+        --nav-player-w: calc(var(--nav-island-w) * 0.528);
         /* Glass kit + accent (showcase default; flower journey overrides below) */
         --nav-accent: #38bdf8;
         --nav-accent-2: #a78bfa;
-        --nav-line: color-mix(in srgb, var(--nav-accent) 32%, #0f172a);
-        --nav-line-soft: color-mix(in srgb, var(--nav-accent) 26%, #334155);
         --nav-ink: #f1f5f9;
         --nav-ink-dim: color-mix(in srgb, #cbd5e1 78%, var(--nav-accent));
-        --nav-glass-fill: rgba(4, 10, 22, 0.74);
+        --nav-glass-fill: rgba(2, 8, 18, 0.34);
         --nav-glass-deep: rgba(2, 6, 14, 0.88);
         --nav-chrome-glow: 0.48;
         flex: 0 0 auto;
@@ -336,70 +334,6 @@
         display: none;
       }
 
-      /* Outside the pill: heliotrope corona — petals tilt with scroll (sun‑seeking); breathe, no rim spin */
-      .nav-stack-top-right > .nav-flora-aura {
-        pointer-events: none;
-      }
-
-      .nav-flora-aura {
-        position: absolute;
-        z-index: 6;
-        right: -0.2rem;
-        top: -1.15rem;
-        width: 5rem;
-        height: 3.75rem;
-        transform-origin: 88% 100%;
-        transform: rotate(calc(var(--nav-dir, 1) * var(--nav-warp, 0) * 14deg))
-          translateX(calc(var(--nav-dir, 1) * var(--nav-warp, 0) * 5px));
-        transition: transform 0.14s ease-out;
-        filter: drop-shadow(0 0 14px color-mix(in srgb, var(--nav-accent) 42%, transparent));
-      }
-
-      .nav-flora-breathe {
-        width: 100%;
-        height: 100%;
-        transform-origin: 88% 100%;
-        animation: navFloraRespire 5.6s ease-in-out infinite alternate;
-      }
-
-      body.music-playing .nav-flora-breathe {
-        animation-duration: 4.1s;
-      }
-
-      @keyframes navFloraRespire {
-        from {
-          transform: scale(0.9);
-          opacity: 0.58;
-        }
-        to {
-          transform: scale(1.06);
-          opacity: 0.92;
-        }
-      }
-
-      .nav-flora-svg {
-        display: block;
-        width: 100%;
-        height: 100%;
-        overflow: visible;
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        .nav-stack-top-right {
-          transform: none;
-        }
-
-        .nav-flora-breathe {
-          animation: none;
-          transform: scale(1);
-          opacity: 0.72;
-        }
-
-        .nav-flora-aura {
-          filter: drop-shadow(0 0 8px color-mix(in srgb, var(--nav-accent) 28%, transparent));
-        }
-      }
-
       .nav-pill-morph {
         position: relative;
         z-index: 3;
@@ -413,17 +347,10 @@
         min-height: var(--nav-island-min-h);
         padding: 0.58rem 0.72rem 0.54rem;
         border-radius: 999px;
-        border: 1px solid var(--nav-line);
-        background:
-          linear-gradient(
-            175deg,
-            color-mix(in srgb, var(--nav-accent) 8%, transparent) 0%,
-            transparent 48%
-          ),
-          var(--nav-glass-fill);
-        box-shadow:
-          0 0 0 1px color-mix(in srgb, var(--nav-accent) 18%, rgba(255, 255, 255, 0.04)),
-          0 14px 36px rgba(0, 0, 0, 0.52);
+        /* Single edge: half-opacity of page `--border` (2× more transparent than solid UI border) */
+        border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+        background: var(--nav-glass-fill);
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
         -webkit-backdrop-filter: blur(18px) saturate(1.12);
         backdrop-filter: blur(18px) saturate(1.12);
         overflow: visible;
@@ -461,12 +388,16 @@
         border-radius: 999px;
       }
 
+      #nav-audio-toggle.nav-flow-hit {
+        --nav-petal-pulse: 0.26;
+      }
+
       .nav-flow-hit {
         flex: 0 0 auto;
-        width: 28px;
-        max-width: 28px;
-        min-width: 28px;
-        height: 28px;
+        width: 31px;
+        max-width: 31px;
+        min-width: 31px;
+        height: 31px;
         margin: 0;
         border: none;
         padding: 0;
@@ -497,69 +428,36 @@
       .nav-flow-svg {
         width: 100%;
         height: 100%;
-        max-width: 28px;
-        max-height: 28px;
+        max-width: 31px;
+        max-height: 31px;
         overflow: visible;
-        color: color-mix(in srgb, var(--nav-accent) 38%, #475569);
-      }
-
-      .nav-deck-chassis {
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 0.55;
-        opacity: 0.55;
-        vector-effect: non-scaling-stroke;
-      }
-
-      .nav-deck-vinyl {
-        vector-effect: non-scaling-stroke;
-      }
-
-      .nav-deck-groove {
-        fill: none;
-        stroke: rgba(248, 250, 252, 0.07);
-        stroke-width: 0.35;
-        vector-effect: non-scaling-stroke;
-      }
-
-      body.music-playing .nav-deck-groove {
-        stroke: rgba(248, 250, 252, 0.11);
       }
 
       .nav-deck-petals {
         vector-effect: non-scaling-stroke;
+        transition: opacity 0.05s linear, filter 0.05s linear;
       }
 
       body:not(.music-playing) .nav-deck-petals {
         opacity: 0.78;
+        filter: none;
       }
 
+      /* Beat / level pulse lives in petal fills (brightness + saturation), not outer rings */
       body.music-playing .nav-deck-petals {
-        opacity: 1;
+        opacity: calc(0.62 + var(--nav-petal-pulse, 0.28) * 0.36);
+        filter: brightness(calc(0.78 + var(--nav-petal-pulse, 0.28) * 0.52))
+          saturate(calc(0.88 + var(--nav-petal-pulse, 0.28) * 0.42));
       }
 
-      .nav-deck-arm {
-        fill: none;
-        stroke: color-mix(in srgb, var(--nav-ink) 50%, var(--nav-accent));
-        stroke-width: 1.05;
-        stroke-linecap: round;
-        opacity: 0.5;
+      .nav-floral-heart {
         vector-effect: non-scaling-stroke;
       }
 
-      body.music-playing .nav-deck-arm {
-        opacity: 0.78;
-      }
-
-      .nav-deck-pivot {
-        fill: color-mix(in srgb, var(--nav-accent) 40%, #1e293b);
-        stroke: rgba(255, 255, 255, 0.2);
-        stroke-width: 0.35;
-        vector-effect: non-scaling-stroke;
-      }
-
-      .nav-deck-spindle {
-        vector-effect: non-scaling-stroke;
+      body.music-playing .nav-floral-heart {
+        opacity: calc(0.82 + var(--nav-petal-pulse, 0.28) * 0.18);
+        filter: brightness(calc(0.9 + var(--nav-petal-pulse, 0.28) * 0.35))
+          saturate(calc(0.92 + var(--nav-petal-pulse, 0.28) * 0.28));
       }
 
       .nav-player-wrap {
@@ -1178,15 +1076,8 @@
           align-items: center;
           --nav-island-min-h: 2.72rem;
         }
-        .nav-flora-aura {
-          width: 4.1rem;
-          height: 3.05rem;
-          right: -0.02rem;
-          top: -0.92rem;
-          z-index: 6;
-        }
         .nav-pill-morph {
-          --nav-island-w: min(72vw, 176px);
+          --nav-island-w: min(72vw, 202px);
           width: var(--nav-island-w);
           min-width: var(--nav-island-w);
           max-width: var(--nav-island-w);
@@ -1214,18 +1105,21 @@
           padding: 0.18rem 0.12rem;
         }
         .nav-flow-hit {
-          width: 26px;
-          max-width: 26px;
-          min-width: 26px;
-          height: 26px;
+          width: 29px;
+          max-width: 29px;
+          min-width: 29px;
+          height: 29px;
         }
         .nav-flow-svg {
-          max-width: 26px;
-          max-height: 26px;
+          max-width: 29px;
+          max-height: 29px;
         }
       }
 
       @media (prefers-reduced-motion: reduce) {
+        .nav-stack-top-right {
+          transform: none;
+        }
         .nav-player-wrap {
           transition-duration: 0.01ms !important;
         }
@@ -1595,22 +1489,26 @@
       .scroll-hint {
         position: fixed;
         left: 50%;
-        bottom: max(2.75rem, 11vh);
+        bottom: max(2.6rem, 10vh);
         transform: translateX(-50%);
         z-index: 9;
         pointer-events: none;
-        font-family: 'Outfit', system-ui, sans-serif;
-        font-size: clamp(0.58rem, 1vw, 0.76rem);
-        font-weight: 400;
-        letter-spacing: 0.36em;
+        margin: 0;
+        padding: 0;
+        font-family: 'Syne', 'Outfit', system-ui, sans-serif;
+        font-size: clamp(0.62rem, 1.05vw, 0.82rem);
+        font-weight: 500;
+        font-style: normal;
+        letter-spacing: 0.24em;
         text-transform: uppercase;
+        text-align: center;
         white-space: nowrap;
-        color: #7dd3fc;
+        color: color-mix(in srgb, #e0f2fe 90%, #a5f3fc 10%);
         text-shadow:
-          0 0 32px color-mix(in srgb, #0ea5e9 40%, transparent),
-          0 0 2px color-mix(in srgb, #020617 80%, transparent);
-        opacity: clamp(0, calc(1 - var(--scroll-raw, 0) * 24), 1);
-        transition: opacity 0.4s ease;
+          0 0 24px color-mix(in srgb, #22d3ee 28%, transparent),
+          0 0 1px color-mix(in srgb, #020617 55%, transparent);
+        opacity: clamp(0, calc((1 - var(--scroll-raw, 0) * 22) * 0.7), 1);
+        transition: opacity 0.55s ease;
       }
 
       #cookie-consent {
@@ -1872,7 +1770,7 @@
       </section>
     </div>
 
-    <p class="scroll-hint" aria-hidden="true">Scroll&nbsp;&nbsp;down</p>
+    <p class="scroll-hint" aria-hidden="true">Scroll down</p>
 
     <div
       id="cookie-consent"
@@ -1923,45 +1821,6 @@
         </a>
 
         <div class="nav-stack-top-right">
-          <div class="nav-flora-aura" aria-hidden="true">
-            <div class="nav-flora-breathe">
-              <svg class="nav-flora-svg" viewBox="0 0 100 88" preserveAspectRatio="xMidYMax meet">
-                <defs>
-                  <linearGradient id="nav-flora-petal" x1="0%" y1="100%" x2="95%" y2="5%">
-                    <stop offset="0%" stop-color="var(--nav-accent)" stop-opacity="0.55"/>
-                    <stop offset="45%" stop-color="var(--nav-accent-2)" stop-opacity="0.28"/>
-                    <stop offset="100%" stop-color="var(--nav-accent)" stop-opacity="0.08"/>
-                  </linearGradient>
-                  <radialGradient id="nav-flora-core" cx="78%" cy="92%" r="42%">
-                    <stop offset="0%" stop-color="var(--nav-accent)" stop-opacity="0.5"/>
-                    <stop offset="70%" stop-color="var(--nav-accent-2)" stop-opacity="0.12"/>
-                    <stop offset="100%" stop-color="transparent" stop-opacity="0"/>
-                  </radialGradient>
-                </defs>
-                <g fill="url(#nav-flora-petal)" stroke="none">
-                  <path
-                    d="M 78 84 Q 52 62 28 44 Q 48 38 62 52 Q 74 68 78 84"
-                    opacity="0.85"
-                  />
-                  <path
-                    d="M 80 84 Q 58 52 42 22 Q 62 26 70 48 Q 76 68 80 84"
-                    opacity="0.72"
-                  />
-                  <path
-                    d="M 82 84 Q 72 48 76 18 Q 88 32 86 56 Q 84 72 82 84"
-                    opacity="0.58"
-                  />
-                  <path
-                    d="M 84 84 Q 86 54 94 32 Q 98 48 92 66 Q 88 78 84 84"
-                    opacity="0.45"
-                  />
-                </g>
-                <ellipse cx="79" cy="83" rx="5" ry="3.2" fill="url(#nav-flora-core)" opacity="0.9"/>
-                <circle cx="76" cy="81" r="1.35" fill="var(--nav-accent)" opacity="0.55"/>
-                <circle cx="82" cy="80.5" r="1.05" fill="var(--nav-accent-2)" opacity="0.45"/>
-              </svg>
-            </div>
-          </div>
           <div class="nav-pill-morph">
             <header class="nav-pill-at">
               <a class="nav-pill-link" href="#">Work</a>
@@ -1971,37 +1830,24 @@
                 id="nav-audio-toggle"
                 aria-label="Play or pause soundtrack"
                 aria-pressed="false"
-                title="Floral platter: spins when music plays. Tap to play or pause."
+                title="Floral control: gentle spin and glow while music plays."
               >
                 <span class="nav-flow-wrap">
                   <svg class="nav-flow-svg" viewBox="0 0 56 56" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
                     <defs>
-                      <radialGradient id="nav-deck-label" cx="32%" cy="28%" r="72%">
-                        <stop offset="0%" stop-color="#f8fafc" stop-opacity="0.97"/>
-                        <stop offset="55%" stop-color="var(--nav-accent)" stop-opacity="0.45"/>
-                        <stop offset="100%" stop-color="var(--nav-accent-2)" stop-opacity="0.22"/>
+                      <radialGradient id="nav-floral-core" cx="38%" cy="36%" r="68%">
+                        <stop offset="0%" stop-color="#f8fafc" stop-opacity="0.42"/>
+                        <stop offset="55%" stop-color="var(--nav-accent)" stop-opacity="0.28"/>
+                        <stop offset="100%" stop-color="var(--nav-accent-2)" stop-opacity="0.14"/>
                       </radialGradient>
-                      <linearGradient id="nav-deck-petal" x1="20%" y1="0%" x2="80%" y2="100%">
-                        <stop offset="0%" stop-color="var(--nav-accent)" stop-opacity="0.92"/>
-                        <stop offset="48%" stop-color="#f8fafc" stop-opacity="0.55"/>
-                        <stop offset="100%" stop-color="var(--nav-accent-2)" stop-opacity="0.5"/>
+                      <linearGradient id="nav-deck-petal" x1="22%" y1="0%" x2="78%" y2="100%">
+                        <stop offset="0%" stop-color="var(--nav-accent)" stop-opacity="0.88"/>
+                        <stop offset="50%" stop-color="#f8fafc" stop-opacity="0.48"/>
+                        <stop offset="100%" stop-color="var(--nav-accent-2)" stop-opacity="0.46"/>
                       </linearGradient>
                     </defs>
-                    <circle class="nav-deck-chassis" cx="28" cy="28" r="27" />
                     <g id="nav-deck-rot" transform="rotate(0 28 28)">
-                      <circle
-                        class="nav-deck-vinyl"
-                        cx="28"
-                        cy="28"
-                        r="23.5"
-                        fill="#050c16"
-                        stroke="rgba(148, 163, 184, 0.14)"
-                        stroke-width="0.45"
-                      />
-                      <circle class="nav-deck-groove" cx="28" cy="28" r="19.2" />
-                      <circle class="nav-deck-groove" cx="28" cy="28" r="15.2" />
-                      <circle class="nav-deck-groove" cx="28" cy="28" r="11.2" />
-                      <g class="nav-deck-petals" fill="url(#nav-deck-petal)" stroke="rgba(255, 255, 255, 0.1)" stroke-width="0.22">
+                      <g class="nav-deck-petals" fill="url(#nav-deck-petal)" stroke="rgba(255, 255, 255, 0.09)" stroke-width="0.2">
                         <ellipse cx="28" cy="11.6" rx="5.1" ry="10.8" transform="rotate(0 28 28)" />
                         <ellipse cx="28" cy="11.6" rx="5.1" ry="10.8" transform="rotate(60 28 28)" />
                         <ellipse cx="28" cy="11.6" rx="5.1" ry="10.8" transform="rotate(120 28 28)" />
@@ -2009,27 +1855,9 @@
                         <ellipse cx="28" cy="11.6" rx="5.1" ry="10.8" transform="rotate(240 28 28)" />
                         <ellipse cx="28" cy="11.6" rx="5.1" ry="10.8" transform="rotate(300 28 28)" />
                       </g>
-                      <circle cx="28" cy="28" r="8.2" fill="url(#nav-deck-label)" opacity="0.94" />
-                      <circle
-                        cx="28"
-                        cy="28"
-                        r="8.2"
-                        fill="none"
-                        stroke="rgba(255, 255, 255, 0.14)"
-                        stroke-width="0.4"
-                      />
-                      <circle
-                        class="nav-deck-spindle"
-                        cx="28"
-                        cy="28"
-                        r="1.45"
-                        fill="#0a1020"
-                        stroke="rgba(255, 255, 255, 0.18)"
-                        stroke-width="0.28"
-                      />
+                      <circle class="nav-floral-heart" cx="28" cy="28" r="5.8" fill="url(#nav-floral-core)" opacity="0.9" />
+                      <circle cx="28" cy="28" r="1.65" fill="var(--nav-accent-2)" opacity="0.38" />
                     </g>
-                    <path class="nav-deck-arm" d="M 44.5 6.5 L 37.5 23.5" />
-                    <circle class="nav-deck-pivot" cx="44.5" cy="6.5" r="1.85" />
                   </svg>
                 </span>
               </button>
