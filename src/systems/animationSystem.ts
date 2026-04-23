@@ -105,6 +105,8 @@ export class AnimationSystem implements ISystem {
   private readonly _blendToLook = new Vector3();
   private _lastJourneySection: number | null = null;
   private _journeyBlendT = 1;
+  /** 0–1, applied as a brief orbit/lift on act-0 only (post–splash intro). */
+  private _postLoadCameraEnvelop = 0;
 
   constructor(
     camera: InkblotCamera,
@@ -135,6 +137,10 @@ export class AnimationSystem implements ISystem {
 
   setJourneyFlower(state: { section: number; localT: number } | null): void {
     this.journeyFlower = state;
+  }
+
+  setPostLoadCameraEnvelop(v: number): void {
+    this._postLoadCameraEnvelop = clamp(v, 0, 1);
   }
 
   update(ctx: FrameContext): void {
@@ -182,6 +188,18 @@ export class AnimationSystem implements ISystem {
       } else {
         this._samplePos.copy(this._blendToPos);
         this._sampleLook.copy(this._blendToLook);
+      }
+
+      if (section === 0 && this._postLoadCameraEnvelop > 0) {
+        const w = this._postLoadCameraEnvelop;
+        const e = ctx.elapsed;
+        const s = Math.sin(e * 0.72);
+        const c = Math.cos(e * 0.72);
+        this._samplePos.x += s * 0.48 * w;
+        this._samplePos.z += c * 0.38 * w;
+        this._samplePos.y += 0.14 * w * Math.sin(e * 0.95);
+        this._sampleLook.x += s * 0.07 * w;
+        this._sampleLook.y += 0.04 * w * Math.sin(e * 1.08);
       }
 
       this.camera.moveTo(this._samplePos.x, this._samplePos.y, this._samplePos.z);

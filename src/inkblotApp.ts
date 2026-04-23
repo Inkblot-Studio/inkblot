@@ -10,7 +10,7 @@ import { AnimationSystem } from '@/systems/animationSystem';
 import { AudioSystem } from '@/systems/audioSystem';
 import { FluidFlowerComponent } from '@/components/fluidFlower';
 import { CitronBloomComponent } from '@/components/citronBloomComponent';
-import { SideCurtainParticlesComponent } from '@/components/sideCurtainParticles';
+import { PeripheralLatticeComponent } from '@/components/peripheralLattice';
 import { Sections3DComponent } from '@/components/sections3D';
 import type { FrameContext, ISystem, IComponent } from '@/types';
 import { clamp, smoothstep } from '@/utils/math';
@@ -39,6 +39,7 @@ import {
 } from '@/core/studioEnvironment';
 import { initCookieConsent } from '@/ui/cookieConsent';
 import { initNavChrome, updateNavChrome } from '@/ui/navChrome';
+import { clearPortfolioScrollNavigator, registerPortfolioScrollNavigator } from '@/ui/portfolioNavigator';
 import {
   computeJourneySectionTransitionFx,
   journeyCumulativeStops,
@@ -50,6 +51,7 @@ import {
   syncJourneyFog,
   type JourneyWebSceneHandle,
 } from '@/journey/journeyWebScene';
+import { INK_BLOT_POST_LOAD_INTRO, POST_LOAD_INTRO_MS } from '@/postLoadIntro';
 
 /**
  * Citron Bloom is the default experience. Use `?fluid` for the legacy raymarched flower, or
@@ -120,7 +122,9 @@ export class Inkblot {
   private readonly bloomSwap = new BloomExperienceSwapController();
   private studioEnvironment: StudioEnvironmentHandle | null = null;
   private liquidRibbon: PointerLiquidRibbonHandle | null = null;
-  private sideCurtainParticles: SideCurtainParticlesComponent | null = null;
+  private peripheralLattice: PeripheralLatticeComponent | null = null;
+  /** Performance.now() at splash exit; drives a few seconds of bloom + camera “show” on the flower. */
+  private postLoadIntroStart: number | null = null;
 
   constructor(container: HTMLElement) {
     const { active: useCitronBloom, lod: citronBloomLod } = parseCitronBloomMode();
@@ -204,11 +208,11 @@ export class Inkblot {
         this.interactionSystem,
       );
       this.components.push(this.citronBloomComponent);
-      this.sideCurtainParticles = new SideCurtainParticlesComponent(
+      this.peripheralLattice = new PeripheralLatticeComponent(
         () => this.useCitronBloom && this.activeBloomExperienceId === 'flower',
         this.citronBloomLod,
       );
-      this.components.push(this.sideCurtainParticles);
+      this.components.push(this.peripheralLattice);
     } else {
       this.fluidFlowerComponent = new FluidFlowerComponent();
       this.sections3DComponent = new Sections3DComponent();
@@ -230,7 +234,7 @@ export class Inkblot {
       this.postprocessing.init(this.renderer.instance);
     }
 
-    /** Camera must live in the scene graph so children (e.g. side-curtain Points) are rendered. */
+    /** Camera must live in the scene graph so children (e.g. peripheral lattice) are rendered. */
     this.scene.instance.add(this.camera.instance);
 
     for (const system of this.systems) {
@@ -239,8 +243,6 @@ export class Inkblot {
     for (const component of this.components) {
       component.init(this.frameContext);
     }
-
-    this.sideCurtainParticles?.setAudioSystem(this.audioSystem);
 
     if (this.useCitronBloom && this.citronBloomComponent) {
       this.animationSystem.setMode(this.citronBloomComponent.getCameraMode());
@@ -256,6 +258,9 @@ export class Inkblot {
       this.scene.instance.add(this.liquidRibbon.group);
     }
 
+    registerPortfolioScrollNavigator((p) => {
+      this.scrollSystem.scrollToProgress(p, 'smooth');
+    });
     initNavChrome(this.audioSystem);
     initCookieConsent();
 
@@ -264,6 +269,9 @@ export class Inkblot {
     this.initStudioEnvironment();
 
     window.addEventListener('resize', this.onResize);
+    if (this.useCitronBloom && this.bloomExperienceId === 'flower') {
+      window.addEventListener(INK_BLOT_POST_LOAD_INTRO, this.onPostLoadIntro);
+    }
     this.renderer.instance.setAnimationLoop(this.tick);
 
     if (import.meta.env.DEV && this.useCitronBloom) {
@@ -373,6 +381,8 @@ export class Inkblot {
         );
         this.camera.setDampFactor(this.activeBloomExperienceId === 'flower' ? 12.5 : 1.42);
         if (this.activeBloomExperienceId !== 'flower') {
+          this.postLoadIntroStart = null;
+          this.animationSystem.setPostLoadCameraEnvelop(0);
           this.animationSystem.setJourneyFlower(null);
           this.prevJourneySection = null;
           this.journeyTransitionPulse = 0;
@@ -418,9 +428,13 @@ export class Inkblot {
       }
       document.documentElement.style.setProperty('--journey-work-ui', String(workOpacity));
 
-      const bloomCss =
+      const baseBloom =
         journey.section === 0 ? bloomScrollDrive(journey.localT) : 1;
-      document.documentElement.style.setProperty('--bloom-scroll', String(bloomCss));
+      const postEnv = this.takePostLoadIntroEnvelope(performance.now());
+      this.animationSystem.setPostLoadCameraEnvelop(journey.section === 0 ? postEnv : 0);
+      const introBoost = journey.section === 0 ? postEnv * 0.34 : 0;
+      const mergedBloom = Math.min(1, baseBloom + introBoost);
+      document.documentElement.style.setProperty('--bloom-scroll', String(mergedBloom));
 
       this.animationSystem.setJourneyFlower({
         section: journey.section,
@@ -449,9 +463,7 @@ export class Inkblot {
         }
       }
 
-      const drive =
-        journey.section === 0 ? bloomScrollDrive(journey.localT) : 1;
-      this.citronBloomComponent?.applyBloomDrive(drive);
+      this.citronBloomComponent?.applyBloomDrive(mergedBloom);
 
       const transitionFxFloor = computeJourneySectionTransitionFx(journey);
       const allowCameraBelowGround = transitionFxFloor > 0.14 || this.journeyTransitionPulse > 0.32;
@@ -588,9 +600,34 @@ export class Inkblot {
 
   };
 
+  private onPostLoadIntro = (): void => {
+    this.postLoadIntroStart = performance.now();
+  };
+
+  /**
+   * Envelope 0 → 1 → 0 over {@link POST_LOAD_INTRO_MS}; used for act-0 bloom and camera wobble.
+   */
+  private takePostLoadIntroEnvelope(now: number): number {
+    if (this.postLoadIntroStart == null) return 0;
+    const t = (now - this.postLoadIntroStart) / POST_LOAD_INTRO_MS;
+    if (t >= 1) {
+      this.postLoadIntroStart = null;
+      return 0;
+    }
+    const base = Math.sin(Math.PI * t);
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return base * 0.24;
+    }
+    return base;
+  }
+
   dispose(): void {
     this.renderer.instance.setAnimationLoop(null);
     window.removeEventListener('resize', this.onResize);
+    if (this.useCitronBloom && this.bloomExperienceId === 'flower') {
+      window.removeEventListener(INK_BLOT_POST_LOAD_INTRO, this.onPostLoadIntro);
+    }
+    clearPortfolioScrollNavigator();
 
     for (const component of this.components) component.dispose();
     for (const system of this.systems) system.dispose();

@@ -33,7 +33,7 @@ const MUSIC_LIBRARY: MusicTrack[] = [
 ];
 
 /**
- * Soundtrack: MP3 via MediaElementSource → analyser (nav waveform + side-curtain beats).
+ * Soundtrack: MP3 via MediaElementSource → analyser (nav EQ / session state; not used by WebGL).
  */
 export class AudioSystem implements ISystem {
   private audioCtx: AudioContext | null = null;

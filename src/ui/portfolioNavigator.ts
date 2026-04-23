@@ -23,6 +23,16 @@ function progressAtSectionStart(section: number, inset = 0.035): number {
   return clamp((stops[s] ?? 0) + inset, 0, 0.996);
 }
 
+/** Top nav: journey start (bloom / index). */
+export function navScrollToJourneyIndex(): void {
+  scrollImpl?.(0.02);
+}
+
+/** Top nav: work / portfolio section. */
+export function navScrollToWork(): void {
+  scrollImpl?.(progressAtSectionStart(1, 0.05));
+}
+
 /**
  * Lightweight command parser (Active Theory–style “chat navigates the site”).
  * Extend with your API when `VITE_PORTFOLIO_CHAT_URL` is set.

@@ -164,6 +164,13 @@
           max(80px, env(safe-area-inset-right))
           1.5rem
           max(80px, env(safe-area-inset-left));
+        transition: z-index 0s step-end;
+      }
+
+      /* Keep nav (menu) above drawer so the same control can open + close */
+      body.site-drawer-open #ui-layer {
+        z-index: 30;
+        transition: z-index 0s step-start;
       }
 
       .top-chrome {
@@ -225,9 +232,8 @@
       }
 
       .nav-stack-top-right {
-        --nav-island-w: min(78vw, 218px);
-        --nav-island-min-h: 2.95rem;
-        --nav-player-w: calc(var(--nav-island-w) * 0.528);
+        --nav-island-w: min(90vw, 22rem);
+        --nav-player-w: var(--nav-island-w);
         /* Glass kit + accent (showcase default; flower journey overrides below) */
         --nav-accent: #38bdf8;
         --nav-accent-2: #a78bfa;
@@ -270,130 +276,278 @@
         display: none;
       }
 
-      .nav-pill-morph {
+      .nav-text-cluster {
         position: relative;
         z-index: 3;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.35rem 1.15rem;
         width: var(--nav-island-w);
-        min-width: var(--nav-island-w);
+        min-width: min(100%, var(--nav-island-w));
         max-width: var(--nav-island-w);
         box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        min-height: var(--nav-island-min-h);
-        padding: 0.58rem 0.72rem 0.54rem;
-        border-radius: 999px;
-        /* Single edge: half-opacity of page `--border` (2× more transparent than solid UI border) */
-        border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
-        background: var(--nav-glass-fill);
-        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
-        -webkit-backdrop-filter: blur(18px) saturate(1.12);
-        backdrop-filter: blur(18px) saturate(1.12);
-        overflow: visible;
+        padding: 0.1rem 0;
       }
 
-      .nav-pill-at {
-        position: relative;
-        z-index: 1;
-        flex: 1;
-        min-height: 0;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.12rem 0.32rem;
-        padding: 0.16rem 0.22rem 0.2rem;
-        margin: 0;
-        border: none;
-        border-radius: 0;
-        background: transparent;
-        box-shadow: none;
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-      }
-
-      .nav-pill-link {
-        font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
-        font-size: clamp(0.58rem, 1.5vw, 0.68rem);
-        font-weight: 500;
-        letter-spacing: 0.14em;
+      .nav-text-link {
+        font-family: 'Outfit', system-ui, sans-serif;
+        font-size: clamp(0.68rem, 1.4vw, 0.8rem);
+        font-weight: 400;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
-        color: var(--nav-ink-dim);
         text-decoration: none;
-        white-space: nowrap;
-        padding: 0.22rem 0.16rem;
-        border-radius: 999px;
-      }
-
-      #nav-audio-toggle.nav-flow-hit {
-        --nav-petal-pulse: 0.26;
-      }
-
-      .nav-flow-hit {
-        flex: 0 0 auto;
-        width: 31px;
-        max-width: 31px;
-        min-width: 31px;
-        height: 31px;
-        margin: 0;
+        color: var(--nav-ink);
+        background: none;
         border: none;
-        padding: 0;
-        background: transparent;
+        padding: 0.28rem 0;
+        margin: 0;
         cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        white-space: nowrap;
+        transition: color 0.2s ease, opacity 0.2s ease;
+        opacity: 0.9;
+        pointer-events: auto;
+      }
+
+      .nav-text-link:hover {
+        opacity: 1;
+        color: #fff;
+      }
+
+      /* Top nav: playful “ink drops” (opens menu); same slot shows × to close */
+      .nav-menu-btn {
+        flex: 0 0 auto;
+        width: 2.1rem;
+        height: 2.1rem;
+        min-width: 2.1rem;
+        margin: 0 0 0 0.2rem;
+        padding: 0;
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 999px;
-        pointer-events: auto;
+        border: none;
+        background: none;
+        color: var(--nav-ink);
+        cursor: pointer;
         -webkit-tap-highlight-color: transparent;
+        pointer-events: auto;
+        opacity: 0.9;
+        transition: opacity 0.2s ease, color 0.2s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
       }
 
-      .nav-flow-hit:focus-visible {
-        outline: 1px solid color-mix(in srgb, var(--nav-accent) 75%, #fff);
+      .nav-menu-btn:hover {
+        opacity: 1;
+        color: #fff;
+        transform: scale(1.06);
+      }
+
+      .nav-menu-btn:focus-visible {
+        outline: 1px solid color-mix(in srgb, var(--nav-accent) 80%, #fff);
         outline-offset: 2px;
       }
 
-      .nav-flow-wrap {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      .nav-menu-btn__glyph {
+        position: relative;
+        width: 1.4rem;
+        height: 1.4rem;
+        display: block;
+        pointer-events: none;
+        color: inherit;
+      }
+
+      .nav-menu-btn__bloom,
+      .nav-menu-btn__shut {
+        position: absolute;
+        inset: 0;
+        display: block;
+        transition:
+          opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+          transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .nav-menu-btn__bloom {
+        opacity: 1;
+        transform: rotate(0deg) scale(1);
+      }
+
+      .nav-menu-btn__shut {
+        opacity: 0;
+        transform: rotate(-90deg) scale(0.65);
         pointer-events: none;
       }
 
-      .nav-flow-svg {
-        width: 100%;
-        height: 100%;
-        max-width: 31px;
-        max-height: 31px;
-        overflow: visible;
+      .nav-menu-btn__shut path {
+        stroke: currentColor;
+        stroke-width: 1.6;
+        stroke-linecap: round;
       }
 
-      .nav-deck-petals {
-        vector-effect: non-scaling-stroke;
-        transition: opacity 0.05s linear, filter 0.05s linear;
+      body.site-drawer-open .nav-menu-btn__bloom {
+        opacity: 0;
+        transform: rotate(20deg) scale(0.7);
+        pointer-events: none;
       }
 
-      body:not(.music-playing) .nav-deck-petals {
-        opacity: 0.78;
-        filter: none;
+      body.site-drawer-open .nav-menu-btn__shut {
+        opacity: 1;
+        transform: rotate(0deg) scale(1);
       }
 
-      /* Beat / level pulse lives in petal fills (brightness + saturation), not outer rings */
-      body.music-playing .nav-deck-petals {
-        opacity: calc(0.62 + var(--nav-petal-pulse, 0.28) * 0.36);
-        filter: brightness(calc(0.78 + var(--nav-petal-pulse, 0.28) * 0.52))
-          saturate(calc(0.88 + var(--nav-petal-pulse, 0.28) * 0.42));
+      @media (prefers-reduced-motion: reduce) {
+        .nav-menu-btn__bloom,
+        .nav-menu-btn__shut,
+        .nav-menu-btn:hover {
+          transition-duration: 0.01ms;
+        }
+        .nav-menu-btn:hover {
+          transform: none;
+        }
       }
 
-      .nav-floral-heart {
-        vector-effect: non-scaling-stroke;
+      /* Bottom-left: flat EQ + track popup (docked, editorial) */
+      .audio-dock {
+        --audio-dock-ink: #e8edf4;
+        --audio-dock-ink-mute: #94a3b8;
+        position: fixed;
+        z-index: 19;
+        left: max(1.05rem, env(safe-area-inset-left, 0px));
+        bottom: max(1.15rem, env(safe-area-inset-bottom, 0px));
+        display: flex;
+        flex-direction: column-reverse;
+        align-items: flex-start;
+        gap: 0.55rem;
+        pointer-events: none;
+        font-family: 'IBM Plex Mono', 'JetBrains Mono', monospace;
       }
 
-      body.music-playing .nav-floral-heart {
-        opacity: calc(0.82 + var(--nav-petal-pulse, 0.28) * 0.18);
-        filter: brightness(calc(0.9 + var(--nav-petal-pulse, 0.28) * 0.35))
-          saturate(calc(0.92 + var(--nav-petal-pulse, 0.28) * 0.28));
+      .audio-dock > * {
+        pointer-events: auto;
+      }
+
+      .audio-dock__eq-btn {
+        width: 50px;
+        height: 50px;
+        min-width: 50px;
+        min-height: 50px;
+        border-radius: 50%;
+        border: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #0a0a0a;
+        color: var(--audio-dock-ink);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        box-shadow: none;
+        transition: transform 0.25s ease, background 0.25s ease, opacity 0.2s ease;
+      }
+
+      .audio-dock__eq-btn:hover,
+      .audio-dock__eq-btn:focus-visible {
+        background: #121214;
+        transform: scale(1.03);
+        outline: none;
+      }
+
+      .audio-dock__eq-btn:focus-visible {
+        outline: 1px solid color-mix(in srgb, #38bdf8 55%, #fff);
+        outline-offset: 2px;
+      }
+
+      .audio-dock__eq {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 3px;
+        height: 22px;
+        pointer-events: none;
+      }
+
+      .audio-dock__bar {
+        display: block;
+        width: 3px;
+        min-height: 4px;
+        border-radius: 1.5px;
+        background: color-mix(in srgb, #f1f5f9 88%, #38bdf8 12%);
+        transform-origin: center bottom;
+        transition: height 0.12s ease, background 0.2s ease, opacity 0.2s ease;
+        opacity: 0.4;
+        height: 5px;
+      }
+
+      .audio-dock__eq-btn:hover .audio-dock__bar {
+        opacity: 0.7;
+      }
+
+      body.audio-active .audio-dock__bar {
+        background: color-mix(in srgb, #f8fafc 82%, #22d3ee 18%);
+        opacity: 0.9;
+      }
+
+      body.music-playing .audio-dock__bar {
+        background: #f1f5f9;
+        animation: none;
+      }
+
+      body.music-playing .audio-dock__bar:nth-child(1) {
+        height: calc(5px + var(--nav-petal-pulse, 0.28) * 11px);
+      }
+
+      body.music-playing .audio-dock__bar:nth-child(2) {
+        height: calc(6px + var(--nav-petal-pulse, 0.28) * 16px);
+      }
+
+      body.music-playing .audio-dock__bar:nth-child(3) {
+        height: calc(4px + var(--nav-petal-pulse, 0.28) * 9px);
+      }
+
+      body.music-playing .audio-dock__bar:nth-child(4) {
+        height: calc(6px + var(--nav-petal-pulse, 0.28) * 14px);
+      }
+
+      body.music-playing .audio-dock__bar:nth-child(5) {
+        height: calc(5px + var(--nav-petal-pulse, 0.28) * 10px);
+      }
+
+      @keyframes audioDockEqIdle {
+        0%,
+        100% {
+          transform: scaleY(0.45);
+        }
+        50% {
+          transform: scaleY(1);
+        }
+      }
+
+      body:not(.music-playing) .audio-dock__bar {
+        animation: audioDockEqIdle 0.8s ease-in-out infinite;
+      }
+
+      body:not(.music-playing) .audio-dock__bar:nth-child(1) { animation-delay: 0s; }
+      body:not(.music-playing) .audio-dock__bar:nth-child(2) { animation-delay: 0.1s; }
+      body:not(.music-playing) .audio-dock__bar:nth-child(3) { animation-delay: 0.2s; }
+      body:not(.music-playing) .audio-dock__bar:nth-child(4) { animation-delay: 0.3s; }
+      body:not(.music-playing) .audio-dock__bar:nth-child(5) { animation-delay: 0.4s; }
+
+      body.journey-flower-active .audio-dock__bar {
+        background: color-mix(
+          in srgb,
+          #f1f5f9 78%,
+          var(--journey-rail, #7dd3fc) 22%
+        );
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        body:not(.music-playing) .audio-dock__bar {
+          animation: none;
+          height: 5px;
+          opacity: 0.5;
+        }
       }
 
       .nav-player-wrap {
@@ -437,12 +591,27 @@
         box-shadow: none;
       }
 
+      .audio-dock .nav-player-wrap {
+        --nav-player-pad-x: 0.22rem;
+        align-self: flex-start;
+        width: min(20.5rem, calc(100vw - 2.4rem));
+        min-width: 13.5rem;
+        max-width: 20.5rem;
+        border-radius: 0;
+        border: none;
+        background: #0a0a0a;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+        transform: translateY(4px) scale(0.98);
+        transform-origin: 12% 100%;
+        box-shadow: none;
+      }
+
       body.music-playing .nav-player-wrap::before {
         display: none;
       }
 
       body.music-playing .nav-player-wrap {
-        margin-top: clamp(0.8rem, 2.6vw, 1.2rem);
         min-height: 2.5rem;
         max-height: 5rem;
         padding: 0.2rem 0.18rem;
@@ -458,10 +627,24 @@
         box-shadow: none;
       }
 
+      body.music-playing .audio-dock .nav-player-wrap {
+        margin-top: 0;
+        opacity: 0.98;
+        border-radius: 0;
+        border: none;
+        background: #0a0a0a;
+        transform: translateY(0) scale(1);
+      }
+
       body.music-playing .nav-player-wrap:hover,
       body.music-playing .nav-player-wrap:focus-within {
         opacity: 0.72;
         border-color: rgba(148, 163, 184, 0.28);
+      }
+
+      body.music-playing .audio-dock .nav-player-wrap:hover,
+      body.music-playing .audio-dock .nav-player-wrap:focus-within {
+        opacity: 1;
       }
 
       .nav-mini-player {
@@ -848,19 +1031,27 @@
         .nav-stack-top-right {
           width: 100%;
           align-items: center;
-          --nav-island-min-h: 2.72rem;
         }
-        .nav-pill-morph {
-          --nav-island-w: min(72vw, 202px);
-          width: var(--nav-island-w);
-          min-width: var(--nav-island-w);
-          max-width: var(--nav-island-w);
-          padding: 0.5rem 0.58rem 0.46rem;
-          border-radius: 999px;
+        .nav-text-cluster {
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
+          justify-content: space-between;
+          gap: 0.5rem 0.6rem;
         }
-        .nav-pill-at {
-          padding: 0.12rem 0.16rem 0.16rem;
-          gap: 0.08rem 0.24rem;
+        .nav-text-link {
+          font-size: clamp(0.6rem, 2.5vw, 0.7rem);
+          letter-spacing: 0.1em;
+        }
+        .nav-menu-btn {
+          width: 1.9rem;
+          min-width: 1.9rem;
+        }
+        .audio-dock__eq-btn {
+          width: 46px;
+          height: 46px;
+          min-width: 46px;
+          min-height: 46px;
         }
         .nav-player-wrap {
           --nav-player-pad-x: 0.14rem;
@@ -872,21 +1063,6 @@
           width: 1.2rem;
           height: 1.28rem;
           font-size: 0.48rem;
-        }
-        .nav-pill-link {
-          font-size: clamp(0.5rem, 3.1vw, 0.58rem);
-          letter-spacing: 0.1em;
-          padding: 0.18rem 0.12rem;
-        }
-        .nav-flow-hit {
-          width: 29px;
-          max-width: 29px;
-          min-width: 29px;
-          height: 29px;
-        }
-        .nav-flow-svg {
-          max-width: 29px;
-          max-height: 29px;
         }
       }
 
@@ -1030,6 +1206,257 @@
         text-decoration: underline;
         text-underline-offset: 3px;
       }
+
+      /* Full-height side drawer: flat cut (ref: Unseen) — no chrome borders */
+      .site-drawer {
+        position: fixed;
+        inset: 0;
+        z-index: 18;
+        display: flex;
+        justify-content: flex-end;
+        align-items: stretch;
+        pointer-events: none;
+        visibility: hidden;
+        transition: visibility 0s linear 0.5s;
+      }
+
+      .site-drawer--open {
+        pointer-events: auto;
+        visibility: visible;
+        transition: visibility 0s linear 0s;
+      }
+
+      .site-drawer__backdrop {
+        position: absolute;
+        inset: 0;
+        background: color-mix(in srgb, #020617 38%, #000 62%);
+        opacity: 0;
+        -webkit-backdrop-filter: blur(0);
+        backdrop-filter: blur(0);
+        transition:
+          opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+          -webkit-backdrop-filter 0.5s ease,
+          backdrop-filter 0.5s ease;
+      }
+
+      .site-drawer--open .site-drawer__backdrop {
+        opacity: 1;
+        -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
+      }
+
+      .site-drawer__panel {
+        position: relative;
+        z-index: 1;
+        width: min(100vw, 28rem);
+        max-width: 100%;
+        min-height: 100%;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        background: #0b0b0b;
+        box-shadow: none;
+        border: none;
+        transform: translateX(100%);
+        transition: transform 0.5s cubic-bezier(0.2, 0.85, 0.25, 1);
+      }
+
+      .site-drawer--open .site-drawer__panel {
+        transform: translateX(0);
+      }
+
+      .site-drawer__body {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        padding: max(0.8rem, env(safe-area-inset-top)) max(1.4rem, env(safe-area-inset-right)) 1.2rem
+          max(1.5rem, env(safe-area-inset-left));
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .site-drawer__label-screen {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      .site-drawer__list {
+        list-style: none;
+        margin: 0;
+        padding: 0.6rem 0 0 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+      }
+
+      .site-drawer__item {
+        position: relative;
+        opacity: 0;
+        transform: translateX(0.5rem);
+      }
+
+      .site-drawer--open .site-drawer__item {
+        animation: siteDrawerItemIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      }
+
+      .site-drawer--open .site-drawer__item:nth-child(1) { animation-delay: 0.04s; }
+      .site-drawer--open .site-drawer__item:nth-child(2) { animation-delay: 0.1s; }
+      .site-drawer--open .site-drawer__item:nth-child(3) { animation-delay: 0.16s; }
+
+      @keyframes siteDrawerItemIn {
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .site-drawer__row {
+        position: relative;
+        display: grid;
+        grid-template-columns: 2.1rem 1fr;
+        align-items: baseline;
+        gap: 0.5rem 1.15rem;
+        padding: 0.9rem 0.15rem 1.1rem 0.05rem;
+        text-decoration: none;
+        color: #fafafa;
+        background: none;
+        border: none;
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition: color 0.2s ease, opacity 0.2s ease;
+        font: inherit;
+      }
+
+      .site-drawer__row:hover,
+      .site-drawer__row:focus-visible {
+        color: #fff;
+        opacity: 0.88;
+        outline: none;
+      }
+
+      .site-drawer__row:focus-visible {
+        outline: 1px solid color-mix(in srgb, #d4d4d8 28%, #52525b);
+        outline-offset: 0.2rem;
+      }
+
+      .site-drawer__n {
+        font-family: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+        font-size: 0.6rem;
+        font-weight: 500;
+        letter-spacing: 0.2em;
+        color: #71717a;
+        align-self: start;
+        padding-top: 0.45em;
+      }
+
+      .site-drawer__row-title {
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: clamp(1.6rem, 4.4vw, 2.1rem);
+        font-weight: 300;
+        letter-spacing: -0.01em;
+        line-height: 1.1;
+        color: #fafafa;
+      }
+
+      .site-drawer__row-mute {
+        font-family: 'Outfit', system-ui, sans-serif;
+        font-size: 0.62rem;
+        font-weight: 400;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-top: 0.2rem;
+      }
+
+      .site-drawer__foot {
+        margin-top: auto;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 1.2rem 1.5rem;
+        border: none;
+        padding-top: 2.25rem;
+      }
+
+      .site-drawer__contact {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        max-width: 12rem;
+      }
+
+      .site-drawer__contact a {
+        font-family: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+        font-size: 0.58rem;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-decoration: none;
+        color: color-mix(in srgb, #e2e8f0 92%, #38bdf8);
+        transition: color 0.2s ease;
+      }
+
+      .site-drawer__contact a:hover {
+        color: #f8fafc;
+      }
+
+      .site-drawer__socials {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.3rem;
+      }
+
+      .site-drawer__socials a {
+        font-family: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+        font-size: 0.52rem;
+        font-weight: 500;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        text-decoration: none;
+        color: var(--text-muted);
+        transition: color 0.2s ease;
+      }
+
+      .site-drawer__socials a:hover {
+        color: #cbd5e1;
+      }
+
+      @media (max-width: 520px) {
+        .site-drawer__panel {
+          width: 100%;
+        }
+        .audio-dock {
+          left: max(0.75rem, env(safe-area-inset-left, 0px));
+          bottom: max(0.9rem, env(safe-area-inset-bottom, 0px));
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .site-drawer__panel {
+          transition: transform 0.01ms;
+        }
+        .site-drawer--open .site-drawer__panel {
+          transform: translateX(0);
+        }
+        .site-drawer__backdrop {
+          transition: opacity 0.2s ease;
+        }
+        .site-drawer--open .site-drawer__item {
+          animation: none;
+          opacity: 1;
+          transform: none;
+        }
+      }
     </style>
   </head>
   <body>
@@ -1106,62 +1533,149 @@
         </a>
 
         <div class="nav-stack-top-right">
-          <div class="nav-pill-morph">
-            <header class="nav-pill-at">
-              <a class="nav-pill-link" href="#">Work</a>
-              <button
-                type="button"
-                class="nav-flow-hit"
-                id="nav-audio-toggle"
-                aria-label="Play or pause soundtrack"
-                aria-pressed="false"
-                title="Floral control: gentle spin and glow while music plays."
-              >
-                <span class="nav-flow-wrap">
-                  <svg class="nav-flow-svg" viewBox="0 0 56 56" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-                    <defs>
-                      <radialGradient id="nav-floral-core" cx="38%" cy="36%" r="68%">
-                        <stop offset="0%" stop-color="#f8fafc" stop-opacity="0.42"/>
-                        <stop offset="55%" stop-color="var(--nav-accent)" stop-opacity="0.28"/>
-                        <stop offset="100%" stop-color="var(--nav-accent-2)" stop-opacity="0.14"/>
-                      </radialGradient>
-                      <linearGradient id="nav-deck-petal" x1="22%" y1="0%" x2="78%" y2="100%">
-                        <stop offset="0%" stop-color="var(--nav-accent)" stop-opacity="0.88"/>
-                        <stop offset="50%" stop-color="#f8fafc" stop-opacity="0.48"/>
-                        <stop offset="100%" stop-color="var(--nav-accent-2)" stop-opacity="0.46"/>
-                      </linearGradient>
-                    </defs>
-                    <g id="nav-deck-rot" transform="rotate(0 28 28)">
-                      <g class="nav-deck-petals" fill="url(#nav-deck-petal)" stroke="rgba(255, 255, 255, 0.09)" stroke-width="0.2">
-                        <ellipse cx="28" cy="11.6" rx="5.1" ry="10.8" transform="rotate(0 28 28)" />
-                        <ellipse cx="28" cy="11.6" rx="5.1" ry="10.8" transform="rotate(60 28 28)" />
-                        <ellipse cx="28" cy="11.6" rx="5.1" ry="10.8" transform="rotate(120 28 28)" />
-                        <ellipse cx="28" cy="11.6" rx="5.1" ry="10.8" transform="rotate(180 28 28)" />
-                        <ellipse cx="28" cy="11.6" rx="5.1" ry="10.8" transform="rotate(240 28 28)" />
-                        <ellipse cx="28" cy="11.6" rx="5.1" ry="10.8" transform="rotate(300 28 28)" />
-                      </g>
-                      <circle class="nav-floral-heart" cx="28" cy="28" r="5.8" fill="url(#nav-floral-core)" opacity="0.9" />
-                      <circle cx="28" cy="28" r="1.65" fill="var(--nav-accent-2)" opacity="0.38" />
-                    </g>
-                  </svg>
-                </span>
-              </button>
-              <a class="nav-pill-link" href="#">Contact</a>
-            </header>
-          </div>
-          <div class="nav-player-wrap" id="nav-player-wrap" aria-hidden="true">
-            <div class="nav-mini-player" id="nav-mini" aria-label="Track controls">
-              <button type="button" class="nav-mini-btn" id="nav-mini-prev" aria-label="Previous track">⟨⟨</button>
-              <div class="nav-mini-info" id="nav-mini-info">
-                <div class="nav-mini-mq nav-mini-mq--title" id="nav-mini-wrap-title">
-                  <div class="nav-mini-mq-view" id="nav-mini-title-view">
-                    <div class="nav-mini-mq-track" id="nav-mini-title-track"></div>
-                  </div>
-                </div>
+          <nav class="nav-text-cluster" aria-label="Primary">
+            <a class="nav-text-link" id="nav-link-index" href="#">Index</a>
+            <a class="nav-text-link" id="nav-link-work" href="#">Work</a>
+            <a class="nav-text-link" href="mailto:ai.support@inkblotstudio.eu">Contact</a>
+            <button
+              type="button"
+              class="nav-menu-btn"
+              id="site-drawer-open"
+              aria-label="Open site menu"
+              aria-expanded="false"
+              aria-controls="site-drawer-panel"
+            >
+              <span class="nav-menu-btn__glyph" aria-hidden="true">
+                <svg
+                  class="nav-menu-btn__bloom"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <circle cx="12" cy="8.2" r="2.5" fill="currentColor" opacity="0.98" />
+                  <circle cx="6.6" cy="16" r="1.7" fill="currentColor" opacity="0.55" />
+                  <circle cx="17.1" cy="15.2" r="1.4" fill="currentColor" opacity="0.42" />
+                  <path
+                    d="M12 1.2l.2 1.1M4.2 5.2l.9.9M19.6 4.3l-1.1.8"
+                    stroke="currentColor"
+                    stroke-width="1.1"
+                    stroke-linecap="round"
+                    opacity="0.4"
+                    fill="none"
+                  />
+                </svg>
+                <svg
+                  class="nav-menu-btn__shut"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M7.2 7.2l9.6 9.6M16.8 7.2l-9.6 9.6"
+                    stroke="currentColor"
+                    stroke-width="1.65"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </span>
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
+
+    <div class="audio-dock" id="audio-dock" aria-label="Audio">
+      <div class="nav-player-wrap" id="nav-player-wrap" aria-hidden="true">
+        <div class="nav-mini-player" id="nav-mini" aria-label="Track controls">
+          <button type="button" class="nav-mini-btn" id="nav-mini-prev" aria-label="Previous track">⟨⟨</button>
+          <div class="nav-mini-info" id="nav-mini-info">
+            <div class="nav-mini-mq nav-mini-mq--title" id="nav-mini-wrap-title">
+              <div class="nav-mini-mq-view" id="nav-mini-title-view">
+                <div class="nav-mini-mq-track" id="nav-mini-title-track"></div>
               </div>
-              <button type="button" class="nav-mini-btn" id="nav-mini-next" aria-label="Next track">⟩⟩</button>
             </div>
           </div>
+          <button type="button" class="nav-mini-btn" id="nav-mini-next" aria-label="Next track">⟩⟩</button>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="audio-dock__eq-btn"
+        id="nav-audio-toggle"
+        aria-label="Play or pause audio"
+        aria-pressed="false"
+      >
+        <span class="audio-dock__eq" aria-hidden="true">
+          <span class="audio-dock__bar"></span>
+          <span class="audio-dock__bar"></span>
+          <span class="audio-dock__bar"></span>
+          <span class="audio-dock__bar"></span>
+          <span class="audio-dock__bar"></span>
+        </span>
+      </button>
+    </div>
+
+    <div class="site-drawer" id="site-drawer" aria-hidden="true">
+      <div
+        class="site-drawer__backdrop"
+        id="site-drawer-backdrop"
+        aria-hidden="true"
+      ></div>
+      <div
+        class="site-drawer__panel"
+        id="site-drawer-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="site-drawer-title"
+        tabindex="-1"
+      >
+        <div class="site-drawer__body">
+          <h2 id="site-drawer-title" class="site-drawer__label-screen">Site menu</h2>
+          <nav aria-label="Site sections">
+            <ul class="site-drawer__list">
+              <li class="site-drawer__item">
+                <a class="site-drawer__row" id="drawer-link-index" href="#">
+                  <span class="site-drawer__n" aria-hidden="true">01</span>
+                  <span>
+                    <span class="site-drawer__row-title">Index</span>
+                  </span>
+                </a>
+              </li>
+              <li class="site-drawer__item">
+                <a class="site-drawer__row" id="drawer-link-work" href="#">
+                  <span class="site-drawer__n" aria-hidden="true">02</span>
+                  <span>
+                    <span class="site-drawer__row-title">Work</span>
+                  </span>
+                </a>
+              </li>
+              <li class="site-drawer__item">
+                <a
+                  class="site-drawer__row"
+                  id="drawer-link-contact"
+                  href="mailto:ai.support@inkblotstudio.eu"
+                >
+                  <span class="site-drawer__n" aria-hidden="true">03</span>
+                  <span>
+                    <span class="site-drawer__row-title">Contact</span>
+                  </span>
+                </a>
+              </li>
+            </ul>
+          </nav>
+          <footer class="site-drawer__foot">
+            <div class="site-drawer__contact">
+              <a id="drawer-mailto" href="mailto:ai.support@inkblotstudio.eu">ai.support@inkblotstudio.eu</a>
+            </div>
+            <div class="site-drawer__socials" aria-label="Links">
+              <a href="https://twitter.com" rel="noreferrer" target="_blank">Twitter / X</a>
+              <a href="https://instagram.com" rel="noreferrer" target="_blank">Instagram</a>
+              <a href="https://www.linkedin.com" rel="noreferrer" target="_blank">LinkedIn</a>
+            </div>
+          </footer>
         </div>
       </div>
     </div>

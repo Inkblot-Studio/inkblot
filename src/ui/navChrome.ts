@@ -1,5 +1,6 @@
 import type { AudioSystem } from '@/systems/audioSystem';
 import type { ScrollSystem } from '@/systems/scrollSystem';
+import { navScrollToJourneyIndex, navScrollToWork } from '@/ui/portfolioNavigator';
 
 let lastMiniPlayerSig = '';
 
@@ -65,42 +66,133 @@ function updateMiniPlayerCredits(audio: AudioSystem): void {
 
   fillMarqueeRow(wrapTitle, titleView, titleTrack, line);
 }
-const DECK_CX = 28;
-const DECK_CY = 28;
-
-/** Integrated angle (deg) — avoids “skipping” when speed follows analyser each frame. */
-let deckAngleDeg = 0;
-/** Smoothed RPM factor so angular acceleration stays gentle. */
-let deckSpeedSmoothed = 48;
 let petalPulseSmoothed = 0.26;
 
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
-}
+let drawerFocusReturn: HTMLElement | null = null;
 
-function advanceDeckAngleDeg(
-  playing: boolean,
-  reducedMotion: boolean,
-  delta: number,
-  low: number,
-  high: number,
-): number {
-  const dt = Math.min(Math.max(delta, 0), 0.05);
-  if (!playing) {
-    deckAngleDeg = 0;
-    deckSpeedSmoothed = 48;
-    return 0;
-  }
-  const targetSpeed = reducedMotion ? 17 : 48 * (1 + low * 0.4 + high * 0.07);
-  deckSpeedSmoothed += (targetSpeed - deckSpeedSmoothed) * Math.min(1, dt * 7);
-  deckAngleDeg += deckSpeedSmoothed * dt;
-  return deckAngleDeg;
+function initSiteDrawer(): void {
+  const root = document.getElementById('site-drawer');
+  const panel = document.getElementById('site-drawer-panel') as HTMLDivElement | null;
+  const openBtn = document.getElementById('site-drawer-open');
+  const backdrop = document.getElementById('site-drawer-backdrop');
+  if (!root || !panel || !openBtn) return;
+
+  const linkIndex = document.getElementById('drawer-link-index');
+  const linkWork = document.getElementById('drawer-link-work');
+
+  const isOpen = () => root.classList.contains('site-drawer--open');
+
+  const getFocusable = (): HTMLElement[] => {
+    const raw = Array.from(
+      panel.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+    return raw.filter((el) => {
+      if (el.hasAttribute('disabled') || el.getAttribute('aria-hidden') === 'true') {
+        return false;
+      }
+      const st = getComputedStyle(el);
+      return st.display !== 'none' && st.visibility !== 'hidden';
+    });
+  };
+
+  const setOpen = (open: boolean): void => {
+    if (open) {
+      if (!isOpen()) {
+        drawerFocusReturn = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      }
+      root.classList.add('site-drawer--open');
+      root.setAttribute('aria-hidden', 'false');
+      openBtn.setAttribute('aria-expanded', 'true');
+      openBtn.setAttribute('aria-label', 'Close site menu');
+      document.body.classList.add('site-drawer-open');
+      document.body.style.overflow = 'hidden';
+      requestAnimationFrame(() => {
+        const first = getFocusable()[0];
+        (first ?? panel).focus();
+      });
+    } else {
+      root.classList.remove('site-drawer--open');
+      root.setAttribute('aria-hidden', 'true');
+      openBtn.setAttribute('aria-expanded', 'false');
+      openBtn.setAttribute('aria-label', 'Open site menu');
+      document.body.classList.remove('site-drawer-open');
+      document.body.style.overflow = '';
+      if (drawerFocusReturn) {
+        drawerFocusReturn.focus();
+        drawerFocusReturn = null;
+      } else {
+        openBtn.focus();
+      }
+    }
+  };
+
+  const closeIfOpen = (): void => {
+    if (isOpen()) setOpen(false);
+  };
+
+  openBtn.addEventListener('click', () => {
+    if (isOpen()) closeIfOpen();
+    else setOpen(true);
+  });
+  backdrop?.addEventListener('click', () => closeIfOpen());
+
+  const onLinkNav = (e: Event, fn: () => void): void => {
+    e.preventDefault();
+    fn();
+    closeIfOpen();
+  };
+
+  linkIndex?.addEventListener('click', (e) => onLinkNav(e, () => navScrollToJourneyIndex()));
+  linkWork?.addEventListener('click', (e) => onLinkNav(e, () => navScrollToWork()));
+
+  document.getElementById('drawer-link-contact')?.addEventListener('click', () => {
+    closeIfOpen();
+  });
+  document.getElementById('drawer-mailto')?.addEventListener('click', () => {
+    closeIfOpen();
+  });
+
+  root.addEventListener('click', (e) => {
+    if ((e.target as Element | null)?.closest?.('.site-drawer__socials a[href]')) {
+      closeIfOpen();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || !isOpen()) return;
+    e.preventDefault();
+    closeIfOpen();
+  });
+
+  root.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab' || !isOpen()) return;
+    const list = getFocusable();
+    if (list.length === 0) return;
+    const active = document.activeElement as HTMLElement | null;
+    const i = active ? list.indexOf(active) : -1;
+    if (e.shiftKey) {
+      if (i <= 0) {
+        e.preventDefault();
+        list[list.length - 1]!.focus();
+      }
+    } else if (i === -1 || i === list.length - 1) {
+      e.preventDefault();
+      list[0]!.focus();
+    }
+  });
 }
 
 export function initNavChrome(audio: AudioSystem): void {
+  document.getElementById('nav-link-index')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    navScrollToJourneyIndex();
+  });
+  document.getElementById('nav-link-work')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    navScrollToWork();
+  });
   document.getElementById('nav-audio-toggle')?.addEventListener('click', (e) => {
     e.preventDefault();
     void audio.toggleAudio();
@@ -113,6 +205,8 @@ export function initNavChrome(audio: AudioSystem): void {
     e.preventDefault();
     audio.nextTrack();
   });
+
+  initSiteDrawer();
 
   window.addEventListener('resize', () => {
     lastMiniPlayerSig = '';
@@ -188,18 +282,6 @@ export function updateNavChrome(
       petalPulseSmoothed += (0.24 - petalPulseSmoothed) * Math.min(1, d * 8);
       audioToggle.style.setProperty('--nav-petal-pulse', petalPulseSmoothed.toFixed(3));
     }
-  }
-
-  const deckRot = document.getElementById('nav-deck-rot');
-  if (deckRot) {
-    const deg = advanceDeckAngleDeg(
-      audio.isPlaying,
-      prefersReducedMotion(),
-      delta,
-      audio.lowFrequencyVolume,
-      audio.highFrequencyVolume,
-    );
-    deckRot.setAttribute('transform', `rotate(${deg} ${DECK_CX} ${DECK_CY})`);
   }
 
   updateMiniPlayerCredits(audio);
