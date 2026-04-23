@@ -10,6 +10,7 @@ import { AnimationSystem } from '@/systems/animationSystem';
 import { AudioSystem } from '@/systems/audioSystem';
 import { FluidFlowerComponent } from '@/components/fluidFlower';
 import { CitronBloomComponent } from '@/components/citronBloomComponent';
+import { FlowerCalloutTextComponent } from '@/components/flowerCalloutText';
 import { PeripheralLatticeComponent } from '@/components/peripheralLattice';
 import { Sections3DComponent } from '@/components/sections3D';
 import type { FrameContext, ISystem, IComponent } from '@/types';
@@ -123,6 +124,7 @@ export class Inkblot {
   private studioEnvironment: StudioEnvironmentHandle | null = null;
   private liquidRibbon: PointerLiquidRibbonHandle | null = null;
   private peripheralLattice: PeripheralLatticeComponent | null = null;
+  private flowerCallout: FlowerCalloutTextComponent | null = null;
   /** Performance.now() at splash exit; drives a few seconds of bloom + camera “show” on the flower. */
   private postLoadIntroStart: number | null = null;
 
@@ -212,7 +214,12 @@ export class Inkblot {
         () => this.useCitronBloom && this.activeBloomExperienceId === 'flower',
         this.citronBloomLod,
       );
-      this.components.push(this.peripheralLattice);
+      this.flowerCallout = new FlowerCalloutTextComponent(
+        () => this.useCitronBloom && this.activeBloomExperienceId === 'flower',
+        () => this.interactionSystem,
+        () => this.scrollSystem.velocityPxPerSec,
+      );
+      this.components.push(this.peripheralLattice, this.flowerCallout);
     } else {
       this.fluidFlowerComponent = new FluidFlowerComponent();
       this.sections3DComponent = new Sections3DComponent();
@@ -440,6 +447,7 @@ export class Inkblot {
         section: journey.section,
         localT: journey.localT,
       });
+      this.flowerCallout?.setJourneyState(journey);
       syncJourneyFog(this.scene.instance, journey.section);
 
       if (this.journeyWeb) {
@@ -475,6 +483,7 @@ export class Inkblot {
 
       this.journeyTransitionPulse *= Math.exp(-delta * 1.45);
     } else if (this.useCitronBloom) {
+      this.flowerCallout?.setJourneyState(null);
       this.journeyTransitionPulse = 0;
       this.camera.setWorldPositionMinY(null);
       this.camera.setDampFactor(1.42);

@@ -219,7 +219,7 @@ export function LoadingScreen({ onExitComplete }: LoadingScreenProps) {
         >
           <div className="loading-screen__shell">
             <p className="loading-screen__status" id={statusId} aria-live="polite">
-              Inkblot — {statusText}
+              {statusText}
             </p>
             <div className="loading-screen__grid" aria-hidden>
               {Array.from({ length: N }, (_, i) => {

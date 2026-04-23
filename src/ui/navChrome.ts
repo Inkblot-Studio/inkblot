@@ -1,5 +1,6 @@
 import type { AudioSystem } from '@/systems/audioSystem';
 import type { ScrollSystem } from '@/systems/scrollSystem';
+import { initDrawerSlotTitles } from '@/ui/drawerSlotTitles';
 import { navScrollToJourneyIndex, navScrollToWork } from '@/ui/portfolioNavigator';
 
 let lastMiniPlayerSig = '';
@@ -67,8 +68,21 @@ function updateMiniPlayerCredits(audio: AudioSystem): void {
   fillMarqueeRow(wrapTitle, titleView, titleTrack, line);
 }
 let petalPulseSmoothed = 0.26;
+/** Phase for a very slow, tiny wobble (no raw-audio noise on the ring). */
+let adVizSwirl = 0;
+/** One smoothed level from the analyser (broad strokes only). */
+let adLevel = 0;
+/** Double EMA 0..1: butter-smooth motion on the single pulse readout. */
+let adViz1 = 0.42;
+let adViz2 = 0.42;
 
 let drawerFocusReturn: HTMLElement | null = null;
+
+let audioDockLiquidOpen = false;
+let audioHoldTimer: number | null = null;
+let audioAutoCloseTimer: number | null = null;
+const HOLD_OPEN_MS = 400;
+const LIQUID_AUTO_CLOSE_MS = 5200;
 
 function initSiteDrawer(): void {
   const root = document.getElementById('site-drawer');
@@ -81,6 +95,33 @@ function initSiteDrawer(): void {
   const linkWork = document.getElementById('drawer-link-work');
 
   const isOpen = () => root.classList.contains('site-drawer--open');
+  /** True while the drawer is open or finishing its close animation (body keeps chrome stacking). */
+  const isDrawerStackedOverScene = () => document.body.classList.contains('site-drawer-open');
+
+  let closeUnlockTimer: number | null = null;
+
+  const finishDrawerCloseUnlock = (): void => {
+    if (closeUnlockTimer != null) {
+      window.clearTimeout(closeUnlockTimer);
+      closeUnlockTimer = null;
+    }
+    panel.removeEventListener('transitionend', onPanelCloseEnd);
+    if (isOpen()) return;
+    if (!document.body.classList.contains('site-drawer-open')) return;
+    document.body.classList.remove('site-drawer-open', 'site-drawer-toggle-on');
+    document.body.style.overflow = '';
+    if (drawerFocusReturn) {
+      drawerFocusReturn.focus();
+      drawerFocusReturn = null;
+    } else {
+      openBtn.focus();
+    }
+  };
+
+  const onPanelCloseEnd = (e: TransitionEvent): void => {
+    if (e.target !== panel || e.propertyName !== 'transform') return;
+    finishDrawerCloseUnlock();
+  };
 
   const getFocusable = (): HTMLElement[] => {
     const raw = Array.from(
@@ -99,6 +140,11 @@ function initSiteDrawer(): void {
 
   const setOpen = (open: boolean): void => {
     if (open) {
+      panel.removeEventListener('transitionend', onPanelCloseEnd);
+      if (closeUnlockTimer != null) {
+        window.clearTimeout(closeUnlockTimer);
+        closeUnlockTimer = null;
+      }
       if (!isOpen()) {
         drawerFocusReturn = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       }
@@ -106,25 +152,24 @@ function initSiteDrawer(): void {
       root.setAttribute('aria-hidden', 'false');
       openBtn.setAttribute('aria-expanded', 'true');
       openBtn.setAttribute('aria-label', 'Close site menu');
-      document.body.classList.add('site-drawer-open');
+      document.body.classList.add('site-drawer-open', 'site-drawer-toggle-on');
       document.body.style.overflow = 'hidden';
       requestAnimationFrame(() => {
         const first = getFocusable()[0];
         (first ?? panel).focus();
       });
     } else {
+      if (!isOpen()) return;
+      // Hamburger back to white/+ immediately; z-index stays via `site-drawer-open` until panel ends.
+      document.body.classList.remove('site-drawer-toggle-on');
       root.classList.remove('site-drawer--open');
       root.setAttribute('aria-hidden', 'true');
       openBtn.setAttribute('aria-expanded', 'false');
       openBtn.setAttribute('aria-label', 'Open site menu');
-      document.body.classList.remove('site-drawer-open');
-      document.body.style.overflow = '';
-      if (drawerFocusReturn) {
-        drawerFocusReturn.focus();
-        drawerFocusReturn = null;
-      } else {
-        openBtn.focus();
-      }
+      // Keep `body.site-drawer-open` and overflow lock until the panel slide + blur finish
+      // so #ui-layer stays above the overlay and the scene doesn’t “pop” by stacking order.
+      panel.addEventListener('transitionend', onPanelCloseEnd);
+      closeUnlockTimer = window.setTimeout(finishDrawerCloseUnlock, 950);
     }
   };
 
@@ -167,7 +212,7 @@ function initSiteDrawer(): void {
   });
 
   root.addEventListener('keydown', (e) => {
-    if (e.key !== 'Tab' || !isOpen()) return;
+    if (e.key !== 'Tab' || (!isOpen() && !isDrawerStackedOverScene())) return;
     const list = getFocusable();
     if (list.length === 0) return;
     const active = document.activeElement as HTMLElement | null;
@@ -184,6 +229,124 @@ function initSiteDrawer(): void {
   });
 }
 
+function clearAudioAutoClose(): void {
+  if (audioAutoCloseTimer) {
+    window.clearTimeout(audioAutoCloseTimer);
+    audioAutoCloseTimer = null;
+  }
+}
+
+function updateMiniPlayerOpenA11y(): void {
+  const w = document.getElementById('nav-player-wrap');
+  if (w) {
+    w.setAttribute('aria-hidden', (!audioDockLiquidOpen).toString());
+  }
+}
+
+function openAudioLiquid(): void {
+  document.getElementById('audio-dock')?.classList.add('audio-dock--liquid');
+  audioDockLiquidOpen = true;
+  updateMiniPlayerOpenA11y();
+  clearAudioAutoClose();
+  audioAutoCloseTimer = window.setTimeout(() => {
+    closeAudioLiquid();
+  }, LIQUID_AUTO_CLOSE_MS);
+}
+
+function closeAudioLiquid(): void {
+  document.getElementById('audio-dock')?.classList.remove('audio-dock--liquid');
+  audioDockLiquidOpen = false;
+  clearAudioAutoClose();
+  updateMiniPlayerOpenA11y();
+}
+
+function scheduleLiquidAfterActivity(): void {
+  if (!audioDockLiquidOpen) return;
+  clearAudioAutoClose();
+  audioAutoCloseTimer = window.setTimeout(() => {
+    closeAudioLiquid();
+  }, LIQUID_AUTO_CLOSE_MS);
+}
+
+/**
+ * Play/pause = quick click. Hold ~400ms opens the liquid track strip; it re-collapses
+ * after ~5s, on quick click the button when open, or after prev/next.
+ */
+function initAudioDockControls(audio: AudioSystem): void {
+  const btn = document.getElementById('nav-audio-toggle');
+  const wrap = document.getElementById('nav-player-wrap');
+  if (!btn) return;
+
+  let holdOpened = false;
+
+  const clearHold = (): void => {
+    if (audioHoldTimer) {
+      window.clearTimeout(audioHoldTimer);
+      audioHoldTimer = null;
+    }
+  };
+
+  const onShort = (): void => {
+    if (audioDockLiquidOpen) {
+      closeAudioLiquid();
+    } else {
+      void audio.toggleAudio();
+    }
+  };
+
+  btn.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    if (audioDockLiquidOpen) {
+      scheduleLiquidAfterActivity();
+      return;
+    }
+    holdOpened = false;
+    clearHold();
+    audioHoldTimer = window.setTimeout(() => {
+      audioHoldTimer = null;
+      holdOpened = true;
+      if (!audioDockLiquidOpen) openAudioLiquid();
+    }, HOLD_OPEN_MS);
+  });
+
+  btn.addEventListener('pointerup', (e) => {
+    if (e.button !== 0) return;
+    clearHold();
+  });
+
+  btn.addEventListener('pointercancel', clearHold);
+
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (holdOpened) {
+      holdOpened = false;
+      return;
+    }
+    onShort();
+  });
+
+  for (const id of ['nav-mini-prev', 'nav-mini-next'] as const) {
+    document.getElementById(id)?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (audioDockLiquidOpen) scheduleLiquidAfterActivity();
+    });
+  }
+
+  wrap?.addEventListener('pointerenter', () => {
+    if (audioDockLiquidOpen) scheduleLiquidAfterActivity();
+  });
+
+  /** Click the track strip (not prev/next) to play or pause. */
+  wrap?.addEventListener('click', (e) => {
+    if (!audioDockLiquidOpen) return;
+    if ((e.target as HTMLElement).closest('button')) return;
+    e.preventDefault();
+    void audio.toggleAudio();
+    scheduleLiquidAfterActivity();
+  });
+}
+
 export function initNavChrome(audio: AudioSystem): void {
   document.getElementById('nav-link-index')?.addEventListener('click', (e) => {
     e.preventDefault();
@@ -192,10 +355,6 @@ export function initNavChrome(audio: AudioSystem): void {
   document.getElementById('nav-link-work')?.addEventListener('click', (e) => {
     e.preventDefault();
     navScrollToWork();
-  });
-  document.getElementById('nav-audio-toggle')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    void audio.toggleAudio();
   });
   document.getElementById('nav-mini-prev')?.addEventListener('click', (e) => {
     e.preventDefault();
@@ -206,7 +365,9 @@ export function initNavChrome(audio: AudioSystem): void {
     audio.nextTrack();
   });
 
+  initAudioDockControls(audio);
   initSiteDrawer();
+  initDrawerSlotTitles();
 
   window.addEventListener('resize', () => {
     lastMiniPlayerSig = '';
@@ -261,7 +422,7 @@ export function updateNavChrome(
 
   const playerWrap = document.getElementById('nav-player-wrap');
   if (playerWrap) {
-    playerWrap.setAttribute('aria-hidden', audio.isPlaying ? 'false' : 'true');
+    playerWrap.setAttribute('aria-hidden', (!audioDockLiquidOpen).toString());
   }
 
   const audioToggle = document.getElementById('nav-audio-toggle');
@@ -277,11 +438,43 @@ export function updateNavChrome(
           audio.highFrequencyVolume * 0.16,
       );
       petalPulseSmoothed += (rawPetal - petalPulseSmoothed) * Math.min(1, d * 14);
-      audioToggle.style.setProperty('--nav-petal-pulse', petalPulseSmoothed.toFixed(3));
     } else {
       petalPulseSmoothed += (0.24 - petalPulseSmoothed) * Math.min(1, d * 8);
-      audioToggle.style.setProperty('--nav-petal-pulse', petalPulseSmoothed.toFixed(3));
     }
+    audioToggle.style.setProperty('--nav-petal-pulse', petalPulseSmoothed.toFixed(3));
+    const lf = audio.lowFrequencyVolume;
+    const hf = audio.highFrequencyVolume;
+    const b = audio.beatEnvelope;
+    const p = petalPulseSmoothed;
+    const playing = audio.isPlaying;
+    // Single wideband level, heavily damped (frame-to-frame noise rejected)
+    const rawLevel = Math.min(1, 0.52 * lf + 0.28 * hf + 0.2 * b);
+    const aLevel = 1 - Math.exp(-2.4 * d);
+    adLevel += (rawLevel - adLevel) * aLevel;
+    if (!playing) {
+      adLevel += (0 - adLevel) * (1 - Math.exp(-1.4 * d));
+    }
+    adVizSwirl = (adVizSwirl + d * 0.55) % 62.83;
+    const a1 = 1 - Math.exp(-3.2 * d);
+    const a2 = 1 - Math.exp(-2.0 * d);
+    let target: number;
+    if (playing) {
+      // Mostly the already-smooth petal term; adLevel gives long-weighted “loud” motion
+      target = 0.08 + 0.9 * (0.52 * p + 0.48 * adLevel);
+    } else {
+      target = 0.2 + 0.14 * Math.sin(adVizSwirl * 0.35);
+    }
+    target = Math.min(0.98, Math.max(0.06, target));
+    if (playing) {
+      const micro = 1 + 0.04 * Math.sin(adVizSwirl * 0.14);
+      target = Math.min(0.99, Math.max(0.07, target * micro));
+    }
+    adViz1 += (target - adViz1) * a1;
+    adViz2 += (adViz1 - adViz2) * a2;
+    const pulse = Math.min(0.99, Math.max(0.07, adViz2));
+    const rot = playing ? Math.sin(adVizSwirl * 0.1) * 5.5 : Math.sin(adVizSwirl * 0.25) * 4;
+    audioToggle.style.setProperty('--ad-pulse', pulse.toFixed(3));
+    audioToggle.style.setProperty('--ad-rot', rot.toFixed(2));
   }
 
   updateMiniPlayerCredits(audio);

@@ -18,10 +18,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--load-pad);
+  padding: max(var(--load-pad), env(safe-area-inset-top, 0px))
+    max(var(--load-pad), env(safe-area-inset-right, 0px))
+    max(var(--load-pad), env(safe-area-inset-bottom, 0px))
+    max(var(--load-pad), env(safe-area-inset-left, 0px));
   overflow: hidden;
   color: var(--load-ink);
   background: var(--load-bg);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .loading-screen--reduced {
@@ -32,21 +36,27 @@
   position: relative;
   z-index: 1;
   width: min(100%, 42rem);
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 1.25rem;
+  box-sizing: border-box;
 }
 
 .loading-screen__status {
   font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: clamp(0.6rem, 0.9vw, 0.7rem);
+  font-size: clamp(0.68rem, 2.8vw, 0.8rem);
   font-weight: 500;
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--load-ink);
   opacity: 0.7;
   margin: 0;
+  text-align: center;
+  line-height: 1.4;
+  padding: 0 0.25rem;
+  text-wrap: balance;
 }
 
 .loading-screen__grid {
@@ -54,7 +64,9 @@
   grid-template-columns: repeat(var(--load-cols), minmax(0, 1fr));
   aspect-ratio: 12 / 8;
   width: 100%;
-  max-height: min(48vh, 24rem);
+  max-width: min(100vw - 1.5rem, 42rem);
+  max-height: min(50dvh, 24rem);
+  min-height: 10rem;
   margin: 0 auto;
   gap: var(--load-gap);
   background: var(--load-bg);
@@ -77,9 +89,55 @@
   border-color: rgba(0, 0, 0, 0.2);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .loading-screen {
+    --load-pad: min(4vw, 1rem);
+  }
+
+  .loading-screen__shell {
+    gap: 1rem;
+  }
+
+  .loading-screen__status {
+    letter-spacing: 0.2em;
+    font-size: clamp(0.7rem, 3.4vw, 0.78rem);
+  }
+
   .loading-screen__grid {
-    max-height: min(52vh, 22rem);
+    max-height: min(45dvh, 20rem);
+    min-height: 11rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .loading-screen {
+    --load-gap: 1px;
+  }
+
+  .loading-screen__shell {
+    gap: 0.75rem;
+  }
+
+  .loading-screen__status {
+    letter-spacing: 0.14em;
+    font-size: max(0.7rem, 2.8vw);
+  }
+
+  .loading-screen__grid {
+    max-height: min(42dvh, 18rem);
+    min-height: 9.5rem;
+  }
+}
+
+/* Short viewports: keep lattice readable, avoid crushing rows */
+@media (max-height: 520px) and (orientation: landscape) {
+  .loading-screen__grid {
+    max-height: min(62dvh, 16rem);
+    min-height: 8.5rem;
+  }
+
+  .loading-screen__shell {
+    gap: 0.5rem;
   }
 }
 
@@ -119,4 +177,25 @@
 .loading-screen__retry:focus-visible {
   outline: 2px solid var(--load-t1);
   outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .loading-screen__frame {
+    padding: 0 0.25rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .loading-screen__error {
+    font-size: 0.88rem;
+    line-height: 1.45;
+  }
+
+  .loading-screen__retry {
+    min-height: 44px;
+    min-width: 8rem;
+    padding: 0.85rem 1.5rem;
+    font-size: 0.68rem;
+    touch-action: manipulation;
+  }
 }
