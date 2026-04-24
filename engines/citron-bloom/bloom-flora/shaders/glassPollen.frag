@@ -1,3 +1,4 @@
+uniform float uTime;
 uniform float uBloom;
 uniform sampler2D uEnvMap;
 uniform float uEnvMapIntensity;
@@ -66,6 +67,25 @@ void main() {
   float shellVis = emerge * openGate;
 
   col *= shellVis;
+
+  /*
+   * Periodic lightning: repeats every ~3.5s. Each instance has a fixed phase in the cycle so
+   * flashes sweep around the ring instead of strobing all at once.
+   */
+  float cycle = fract(uTime / 3.5);
+  float peakAt = fract(vSeed.x * 0.413 + vSeed.y * 0.677 + vSeed.w * 0.193);
+  float d = abs(cycle - peakAt);
+  d = min(d, 1.0 - d);
+  float strike = exp(-d * d * 210.0);
+
+  float peakB = fract(peakAt + 0.41 + vSeed.z * 0.09);
+  float dB = abs(cycle - peakB);
+  dB = min(dB, 1.0 - dB);
+  strike = max(strike, exp(-dB * dB * 240.0) * 0.72);
+
+  float flash = strike * (0.48 + 0.52 * uBloom);
+  vec3 glintCol = mix(vec3(0.7, 0.93, 1.0), vec3(1.0, 0.86, 0.64), vSeed.x * 0.5 + 0.22);
+  col += glintCol * flash * (1.15 + fresnel * 1.85) * shellVis;
 
   float alpha = mix(0.58, 0.94, 1.0 - fresnel * 0.35);
   alpha = mix(alpha, min(alpha + 0.08, 1.0), bb * 0.3);

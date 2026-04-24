@@ -2,8 +2,11 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './App';
+import { bootstrapConsentAnalytics } from './ui/cookieConsent';
 import { LoadingScreen } from './ui/loading/LoadingScreen';
 import { WorkSectionPanel } from './ui/WorkSectionPanel';
+
+bootstrapConsentAnalytics();
 
 const splashEl = document.getElementById('splash-root');
 if (splashEl) {

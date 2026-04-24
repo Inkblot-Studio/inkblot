@@ -11,3 +11,7 @@
 /test-coverage
 /test-reports
 /test-logs
+
+# Orbit/backdrop experiments removed from the tree — do not track large local glTFs here.
+/public/models/BarramundiFish.glb
+/public/models/Flower.glb

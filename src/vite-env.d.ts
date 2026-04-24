@@ -5,6 +5,8 @@ interface ImportMetaEnv {
   readonly VITE_WEB3FORMS_ACCESS_KEY?: string;
   /** When `"true"`, contact form does not call Web3Forms (see `src/config/contactForm.config.ts`). */
   readonly VITE_CONTACT_FORM_DRY_RUN?: string;
+  /** Google Analytics 4 measurement ID (`G-XXXXXXXX`). Optional; analytics loads only after consent. */
+  readonly VITE_GA_MEASUREMENT_ID?: string;
 }
 
 declare module '*.glsl' {

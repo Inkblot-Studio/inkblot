@@ -86,6 +86,7 @@ let closeSiteMenu: (() => void) | null = null;
 let audioDockLiquidOpen = false;
 let audioHoldTimer: number | null = null;
 let audioAutoCloseTimer: number | null = null;
+let audioLiquidOutsideAttachTimer: number | null = null;
 const HOLD_OPEN_MS = 400;
 const LIQUID_AUTO_CLOSE_MS = 5200;
 
@@ -273,6 +274,28 @@ function clearAudioAutoClose(): void {
   }
 }
 
+function detachAudioLiquidOutsidePointer(): void {
+  if (audioLiquidOutsideAttachTimer !== null) {
+    window.clearTimeout(audioLiquidOutsideAttachTimer);
+    audioLiquidOutsideAttachTimer = null;
+  }
+  window.removeEventListener('pointerdown', onAudioLiquidOutsidePointerDown, true);
+}
+
+function isEventFromAudioDock(e: Event): boolean {
+  const dock = document.getElementById('audio-dock');
+  if (!dock) return false;
+  const path = e.composedPath();
+  return path.includes(dock);
+}
+
+function onAudioLiquidOutsidePointerDown(e: PointerEvent): void {
+  if (!audioDockLiquidOpen) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  if (isEventFromAudioDock(e)) return;
+  closeAudioLiquid();
+}
+
 function updateMiniPlayerOpenA11y(): void {
   const w = document.getElementById('nav-player-wrap');
   if (w) {
@@ -286,12 +309,19 @@ function openAudioLiquid(): void {
   playAudioDockUiSound('open');
   updateMiniPlayerOpenA11y();
   clearAudioAutoClose();
+  detachAudioLiquidOutsidePointer();
+  audioLiquidOutsideAttachTimer = window.setTimeout(() => {
+    audioLiquidOutsideAttachTimer = null;
+    window.addEventListener('pointerdown', onAudioLiquidOutsidePointerDown, true);
+  }, 0);
   audioAutoCloseTimer = window.setTimeout(() => {
     closeAudioLiquid();
   }, LIQUID_AUTO_CLOSE_MS);
 }
 
 function closeAudioLiquid(): void {
+  detachAudioLiquidOutsidePointer();
+  if (!audioDockLiquidOpen) return;
   playAudioDockUiSound('close');
   document.getElementById('audio-dock')?.classList.remove('audio-dock--liquid');
   audioDockLiquidOpen = false;

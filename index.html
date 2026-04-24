@@ -9,6 +9,43 @@
       content="Inkblot Studio — scroll-driven 3D, glass flora, and production engineering for serious products."
     />
     <title>Inkblot Studio | Cinematic visual experience</title>
+    <link rel="canonical" href="https://inkblotstudio.eu/" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_GB" />
+    <meta property="og:site_name" content="Inkblot Studio" />
+    <meta property="og:url" content="https://inkblotstudio.eu/" />
+    <meta
+      property="og:title"
+      content="Inkblot Studio | Cinematic visual experience"
+    />
+    <meta
+      property="og:description"
+      content="Inkblot Studio — scroll-driven 3D, glass flora, and production engineering for serious products."
+    />
+    <meta property="og:image" content="https://inkblotstudio.eu/inkblotstudio_logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Inkblot Studio | Cinematic visual experience" />
+    <meta
+      name="twitter:description"
+      content="Inkblot Studio — scroll-driven 3D, glass flora, and production engineering for serious products."
+    />
+    <meta name="twitter:image" content="https://inkblotstudio.eu/inkblotstudio_logo.svg" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Inkblot Studio",
+        "url": "https://inkblotstudio.eu/",
+        "logo": "https://inkblotstudio.eu/inkblotstudio_logo.svg",
+        "email": "ai.support@inkblotstudio.eu",
+        "telephone": "+359-882-797-806",
+        "sameAs": [
+          "https://www.instagram.com/inkblotstudio.eu/",
+          "https://www.linkedin.com/company/inkblot-studio-ltd/"
+        ]
+      }
+    </script>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1443,31 +1480,30 @@
         }
 
         #cookie-consent {
-          width: min(calc(100vw - 1.25rem), 36rem);
-          padding: 0 max(0.5rem, env(safe-area-inset-left, 0px)) 0
-            max(0.5rem, env(safe-area-inset-right, 0px));
+          width: min(calc(100vw - 1rem - env(safe-area-inset-left, 0px)), 100%);
+          max-width: 16.25rem;
+          right: max(0.5rem, env(safe-area-inset-right, 0px));
+          padding: 0;
         }
 
         .cookie-consent__inner {
-          padding: 1rem 0.9rem 0.95rem;
+          padding: 0.75rem 0.85rem 0.8rem;
         }
 
-        .cookie-consent__text {
-          font-size: max(0.7rem, 2.6vw);
+        .cookie-consent__body {
+          font-size: max(0.72rem, 3vw);
         }
 
         .cookie-consent__actions {
           flex-direction: column;
           align-items: stretch;
-          gap: 0.5rem;
+          gap: 0.45rem;
         }
 
         .cookie-consent__btn {
-          min-height: 44px;
-          display: flex;
-          align-items: center;
+          width: 100%;
+          min-height: 46px;
           justify-content: center;
-          touch-action: manipulation;
         }
 
         .audio-dock {
@@ -1478,13 +1514,21 @@
 
       #cookie-consent {
         position: fixed;
-        left: 50%;
-        bottom: max(1rem, env(safe-area-inset-bottom));
-        transform: translateX(-50%);
+        right: max(1rem, env(safe-area-inset-right, 0px));
+        bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+        left: auto;
+        transform: none;
         z-index: 60;
-        width: min(calc(100vw - 2rem), 36rem);
-        padding: 0 0.75rem;
+        width: min(calc(100vw - 2rem - env(safe-area-inset-left, 0px)), 16.25rem);
+        max-width: 100%;
+        padding: 0;
         pointer-events: none;
+        --ck-spring: cubic-bezier(0.16, 1, 0.3, 1);
+        --ck-bg: #f0ede8;
+        --ck-ink: #1a1812;
+        --ck-ink-soft: #6b645c;
+        --ck-muted: #8a827a;
+        --ck-line: rgba(26, 24, 18, 0.14);
       }
 
       #cookie-consent:not([hidden]) {
@@ -1493,86 +1537,103 @@
 
       .cookie-consent__inner {
         pointer-events: auto;
-        padding: 1.15rem 1.25rem 1.05rem;
-        border-radius: 14px;
-        border: 1px solid color-mix(in srgb, var(--text-muted) 28%, transparent);
-        background: color-mix(in srgb, var(--background) 82%, #0f172a);
-        box-shadow: 0 18px 48px color-mix(in srgb, #000 55%, transparent);
+        padding: 0.75rem 0.8rem 0.8rem;
+        border-radius: 0;
+        border: 1px solid var(--ck-line);
+        background: var(--ck-bg);
+        color: var(--ck-ink);
+        box-shadow: none;
       }
 
       .cookie-consent__text {
-        font-family: 'Outfit', system-ui, sans-serif;
-        font-size: clamp(0.65rem, 1.35vw, 0.74rem);
-        font-weight: 400;
-        line-height: 1.55;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--text-primary);
-        margin-bottom: 1rem;
+        margin: 0 0 0.7rem;
       }
 
-      .cookie-consent__text a {
-        color: inherit;
+      .cookie-consent__body {
+        font-family: 'Outfit', system-ui, sans-serif;
+        font-size: clamp(0.7rem, 1.08vw, 0.8rem);
+        font-weight: 400;
+        line-height: 1.45;
+        letter-spacing: 0.02em;
+        color: var(--ck-ink-soft);
+      }
+
+      .cookie-consent__link {
+        display: inline;
+        margin-left: 0.15em;
+        color: var(--ck-ink);
+        font-weight: 500;
         text-decoration: underline;
-        text-underline-offset: 3px;
+        text-underline-offset: 0.15em;
+      }
+
+      .cookie-consent__link:hover,
+      .cookie-consent__link:focus-visible {
+        color: #14110d;
+      }
+
+      .cookie-consent__link:focus-visible {
+        outline: 2px solid rgba(26, 24, 18, 0.2);
+        outline-offset: 2px;
+        border-radius: 2px;
       }
 
       .cookie-consent__actions {
         display: flex;
+        flex-direction: row;
         flex-wrap: wrap;
-        gap: 0.55rem;
-        margin-bottom: 0.85rem;
+        gap: 0.4rem;
+        align-items: stretch;
       }
 
       .cookie-consent__btn {
-        font-family: 'Outfit', system-ui, sans-serif;
-        font-size: 0.62rem;
+        flex: 1 1 auto;
+        min-width: 6.5rem;
+        min-height: 2.65rem;
+        padding: 0.5rem 0.75rem;
+        box-sizing: border-box;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+        font-size: 0.54rem;
         font-weight: 500;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        padding: 0.62rem 1.15rem;
         border-radius: 999px;
         cursor: pointer;
-        border: 1px solid color-mix(in srgb, var(--text-muted) 45%, transparent);
-        transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+        border: 1px solid var(--ck-line);
+        background: rgba(255, 255, 255, 0.35);
+        color: var(--ck-ink-soft);
+        transition:
+          background 0.2s ease,
+          border-color 0.2s ease,
+          color 0.2s ease;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
       }
 
       .cookie-consent__btn--primary {
-        background: color-mix(in srgb, #1e3a5f 88%, #0f172a);
-        color: var(--text-primary);
+        background: var(--ck-ink);
+        border-color: var(--ck-ink);
+        color: var(--ck-bg);
       }
 
       .cookie-consent__btn--primary:hover {
-        background: color-mix(in srgb, #4a4038 32%, #1e293b);
-        border-color: color-mix(in srgb, var(--text-muted) 65%, transparent);
-      }
-
-      .cookie-consent__btn--ghost {
-        background: transparent;
-        color: var(--text-primary);
+        background: #14110d;
+        border-color: #14110d;
+        color: #faf8f5;
       }
 
       .cookie-consent__btn--ghost:hover {
-        background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+        background: rgba(26, 24, 18, 0.06);
+        border-color: rgba(26, 24, 18, 0.22);
+        color: var(--ck-ink);
       }
 
-      .cookie-consent__links {
-        font-family: 'Outfit', system-ui, sans-serif;
-        font-size: 0.58rem;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.45rem 0.65rem;
-        align-items: center;
-        justify-content: center;
-        color: var(--text-muted);
-      }
-
-      .cookie-consent__links a {
-        color: color-mix(in srgb, var(--text-primary) 88%, var(--text-muted));
-        text-decoration: underline;
-        text-underline-offset: 3px;
+      .cookie-consent__btn:focus-visible {
+        outline: 2px solid rgba(26, 24, 18, 0.2);
+        outline-offset: 2px;
       }
 
 
@@ -2137,24 +2198,19 @@
     >
       <div class="cookie-consent__inner">
         <p id="cookie-consent-title" class="cookie-consent__text">
-          Our site uses essential cookies and, with your consent, analytics cookies.
-          Details in our <a href="#">privacy notice</a>.
+          <span class="cookie-consent__body">
+            Local storage for your choice. Optional analytics if you accept.
+            <a class="cookie-consent__link" href="/privacy-and-cookies">Privacy &amp; cookies</a>
+          </span>
         </p>
         <div class="cookie-consent__actions">
-          <button type="button" class="cookie-consent__btn cookie-consent__btn--primary" id="cookie-accept">
-            Accept cookies
-          </button>
           <button type="button" class="cookie-consent__btn cookie-consent__btn--ghost" id="cookie-reject">
-            Reject cookies
+            Essential only
+          </button>
+          <button type="button" class="cookie-consent__btn cookie-consent__btn--primary" id="cookie-accept">
+            Allow analytics
           </button>
         </div>
-        <p class="cookie-consent__links">
-          <a href="#">Terms &amp; conditions</a>
-          <span aria-hidden="true">·</span>
-          <a href="#">Cookie policy</a>
-          <span aria-hidden="true">·</span>
-          <a href="#">Privacy policy</a>
-        </p>
       </div>
     </div>
 
@@ -2355,6 +2411,7 @@
             <div class="site-drawer__contact">
               <a id="drawer-mailto" href="mailto:ai.support@inkblotstudio.eu">ai.support@inkblotstudio.eu</a>
               <a class="site-drawer__phone" href="tel:+359882797806">+359 882 797 806</a>
+              <a href="/privacy-and-cookies">Privacy &amp; cookies</a>
             </div>
             <div class="site-drawer__socials" aria-label="Links">
               <a href="https://www.instagram.com/inkblotstudio.eu/" rel="noreferrer" target="_blank"

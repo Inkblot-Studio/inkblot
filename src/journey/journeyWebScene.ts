@@ -48,6 +48,10 @@ export function createJourneyWebScene(): JourneyWebSceneHandle {
 }
 
 export function syncJourneyFog(scene: Scene, section: number): void {
+  if (section < 0) {
+    scene.fog = null;
+    return;
+  }
   if (section === 0) {
     scene.fog = flowerPoolAtmosphereFog;
   } else {

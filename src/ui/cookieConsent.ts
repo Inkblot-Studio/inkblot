@@ -1,32 +1,56 @@
-const STORAGE_KEY = 'inkblot-cookie-consent';
+import { initGoogleAnalyticsIfConfigured, analyticsPageView } from '@/analytics/googleAnalytics';
+import {
+  CONSENT_STORAGE_KEY,
+  migrateLegacyConsent,
+  readConsent,
+  writeConsent,
+  hasAnalyticsConsent,
+} from '@/consent/consentStorage';
 
-/**
- * Shows the cookie banner until the visitor accepts or rejects (stored in localStorage).
- */
+/** Run once at app entry: migrate legacy keys and load GA script if the visitor already opted in. */
+export function bootstrapConsentAnalytics(): void {
+  migrateLegacyConsent();
+  if (hasAnalyticsConsent()) {
+    void initGoogleAnalyticsIfConfigured();
+  }
+}
+
 export function initCookieConsent(): void {
+  migrateLegacyConsent();
+
   const root = document.getElementById('cookie-consent');
   if (!root) return;
 
-  try {
-    if (localStorage.getItem(STORAGE_KEY)) {
-      root.remove();
-      return;
-    }
-  } catch {
-    /* private mode — keep banner visible */
+  if (readConsent()) {
+    root.remove();
+    return;
   }
 
   root.hidden = false;
 
-  const dismiss = (value: 'accepted' | 'rejected') => {
+  const dismiss = (analytics: boolean) => {
     try {
-      localStorage.setItem(STORAGE_KEY, value);
+      writeConsent(analytics);
     } catch {
-      /* ignore */
+      /* private mode */
+    }
+    if (analytics) {
+      void initGoogleAnalyticsIfConfigured().then(() => {
+        analyticsPageView(`${window.location.pathname}${window.location.search}`, document.title);
+      });
     }
     root.remove();
   };
 
-  document.getElementById('cookie-accept')?.addEventListener('click', () => dismiss('accepted'));
-  document.getElementById('cookie-reject')?.addEventListener('click', () => dismiss('rejected'));
+  document.getElementById('cookie-reject')?.addEventListener('click', () => dismiss(false));
+  document.getElementById('cookie-accept')?.addEventListener('click', () => dismiss(true));
+}
+
+/** For tests or future “cookie settings” UI. */
+export function clearConsentForTesting(): void {
+  try {
+    localStorage.removeItem(CONSENT_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
 }
