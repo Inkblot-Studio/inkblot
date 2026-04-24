@@ -90,6 +90,40 @@ let audioLiquidOutsideAttachTimer: number | null = null;
 const HOLD_OPEN_MS = 400;
 const LIQUID_AUTO_CLOSE_MS = 5200;
 
+/**
+ * Top nav pills: wrap label into per-letter spans (serif swap staggered last→first).
+ */
+function initNavTextLinkMicroInteractions(): void {
+  const links = document.querySelectorAll<HTMLElement>('.nav-text-cluster .nav-text-link');
+  for (const link of links) {
+    const sans = link.querySelector<HTMLElement>('.nav-text-link__row--sans');
+    const serif = link.querySelector<HTMLElement>('.nav-text-link__row--serif');
+    if (!sans || !serif) continue;
+
+    if (!sans.querySelector('.nav-text-link__ch')) {
+      const text = (sans.textContent ?? '').replace(/\s+/g, ' ').trim();
+      if (!text) continue;
+      const chars = [...text];
+      const n = chars.length;
+      sans.replaceChildren();
+      serif.replaceChildren();
+      for (let i = 0; i < n; i++) {
+        const li = n - 1 - i;
+        const mk = (ch: string) => {
+          const s = document.createElement('span');
+          s.className = 'nav-text-link__ch';
+          s.setAttribute('aria-hidden', 'true');
+          s.style.setProperty('--li', String(li));
+          s.textContent = ch;
+          return s;
+        };
+        sans.appendChild(mk(chars[i] ?? ''));
+        serif.appendChild(mk(chars[i] ?? ''));
+      }
+    }
+  }
+}
+
 function initSiteDrawer(): void {
   const root = document.getElementById('site-drawer');
   const panel = document.getElementById('site-drawer-panel') as HTMLDivElement | null;
@@ -448,6 +482,7 @@ export function initNavChrome(audio: AudioSystem): void {
 
   initAudioDockControls(audio);
   initSiteDrawer();
+  initNavTextLinkMicroInteractions();
   initContactNavLinks();
   initDrawerSlotTitles();
 

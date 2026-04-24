@@ -298,6 +298,7 @@
         --nav-glass-fill: rgba(2, 8, 18, 0.34);
         --nav-glass-deep: rgba(2, 6, 14, 0.88);
         --nav-chrome-glow: 0.48;
+        --nav-link-ring: color-mix(in srgb, #ffffff 70%, var(--nav-ink) 30%);
         flex: 0 0 auto;
         margin-left: auto;
         display: flex;
@@ -349,11 +350,9 @@
         perspective: 720px;
       }
 
-      /*
-       * Nav label: two stacked rows in a fixed grid cell — only transforms move; no reflow
-       * (Outfit “drops”, Fraunces “falls in”; on leave the swap reverses = surfaces from below).
-       */
+      /* Nav label: two stacked rows — letter stagger + simple pill border on hover/focus. */
       .nav-text-link {
+        position: relative;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -363,21 +362,23 @@
         min-height: 1.5rem;
         text-decoration: none;
         color: var(--nav-ink);
-        background: none;
         border: 1px solid transparent;
         border-radius: 999px;
+        background: none;
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
         white-space: nowrap;
         opacity: 0.9;
         pointer-events: auto;
-        transition: opacity 0.2s ease, border-color 0.3s ease;
+        transition:
+          opacity 0.2s ease,
+          border-color 0.35s cubic-bezier(0.32, 0.72, 0, 1);
       }
 
       .nav-text-link:hover,
       .nav-text-link:focus-visible {
         opacity: 1;
-        border-color: color-mix(in srgb, #ffffff 70%, var(--nav-ink) 30%);
+        border-color: var(--nav-link-ring);
       }
 
       .nav-text-link:hover:not(:focus-visible) {
@@ -403,22 +404,32 @@
 
       .nav-text-link__row {
         grid-area: 1 / 1;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        justify-content: center;
+        align-items: center;
+        gap: 0.12em;
         font-size: clamp(0.68rem, 1.4vw, 0.8rem);
         font-weight: 400;
-        letter-spacing: 0.12em;
+        letter-spacing: 0;
         text-transform: uppercase;
         color: inherit;
         line-height: 1.2;
-        transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);
         will-change: transform;
       }
 
-      .nav-text-link__row--sans {
-        font-family: 'Outfit', system-ui, sans-serif;
+      .nav-text-link__ch {
+        display: inline-block;
+        transition: transform 0.46s cubic-bezier(0.32, 0.72, 0, 1);
+        transition-delay: calc(var(--li, 0) * 44ms);
+      }
+
+      .nav-text-link__row--sans .nav-text-link__ch {
         transform: translate3d(0, 0, 0);
       }
 
-      .nav-text-link__row--serif {
+      .nav-text-link__row--serif .nav-text-link__ch {
         font-family: 'Fraunces', Georgia, serif;
         font-style: italic;
         font-weight: 300;
@@ -426,18 +437,21 @@
         transform: translate3d(0, -110%, 0);
       }
 
-      .nav-text-link:hover .nav-text-link__row--sans,
-      .nav-text-link:focus-visible .nav-text-link__row--sans {
+      .nav-text-link__row--sans {
+        font-family: 'Outfit', system-ui, sans-serif;
+      }
+
+      .nav-text-link:hover .nav-text-link__row--sans .nav-text-link__ch,
+      .nav-text-link:focus-visible .nav-text-link__row--sans .nav-text-link__ch {
         transform: translate3d(0, 110%, 0);
       }
 
-      .nav-text-link:hover .nav-text-link__row--serif,
-      .nav-text-link:focus-visible .nav-text-link__row--serif {
+      .nav-text-link:hover .nav-text-link__row--serif .nav-text-link__ch,
+      .nav-text-link:focus-visible .nav-text-link__row--serif .nav-text-link__ch {
         transform: translate3d(0, 0, 0);
       }
 
-      .nav-text-link:active .nav-text-link__row--sans,
-      .nav-text-link:active .nav-text-link__row--serif {
+      .nav-text-link:active .nav-text-link__ch {
         transition-duration: 0.2s;
       }
 
@@ -1295,23 +1309,27 @@
           transition: opacity 0.12s ease, visibility 0s linear 0.12s;
           transition-delay: 0s;
         }
-        .nav-text-link__row {
-          transition: opacity 0.12s ease;
+        .nav-text-link {
+          transition: opacity 0.12s ease, border-color 0.18s ease;
         }
-        .nav-text-link__row--serif {
+        .nav-text-link__ch {
+          transition-delay: 0ms !important;
+          transition-duration: 0.12s ease;
+        }
+        .nav-text-link__row--serif .nav-text-link__ch {
           transform: none;
           opacity: 0;
         }
-        .nav-text-link__row--sans {
+        .nav-text-link__row--sans .nav-text-link__ch {
           transform: none;
         }
-        .nav-text-link:hover .nav-text-link__row--sans,
-        .nav-text-link:focus-visible .nav-text-link__row--sans {
+        .nav-text-link:hover .nav-text-link__row--sans .nav-text-link__ch,
+        .nav-text-link:focus-visible .nav-text-link__row--sans .nav-text-link__ch {
           transform: none;
           opacity: 0;
         }
-        .nav-text-link:hover .nav-text-link__row--serif,
-        .nav-text-link:focus-visible .nav-text-link__row--serif {
+        .nav-text-link:hover .nav-text-link__row--serif .nav-text-link__ch,
+        .nav-text-link:focus-visible .nav-text-link__row--serif .nav-text-link__ch {
           transform: none;
           opacity: 1;
         }
