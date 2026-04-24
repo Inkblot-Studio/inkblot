@@ -2,6 +2,8 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { closeContactAndRestore, restoreScrollAfterContact } from '@/navigation/contactRouteBridge';
+import { ContactDipLinks } from '@/ui/contact/ContactDipLinks';
+import { ContactPageBlooms } from '@/ui/contact/ContactPageBlooms';
 import { contactPageInner, contactPageMist, contactPageSky } from '@/ui/contact/contactPageMotion';
 import { useInterfaceAudio } from '@/ui/useInterfaceAudio';
 import { submitContact, resolveWeb3AccessKey } from '@/utils/contactFormSubmit';
@@ -18,7 +20,6 @@ const MAIL_GENERAL_HREF = `mailto:${MAIL}?subject=${encodeURIComponent('General 
 const PHONE_TEL = '+359882797806';
 const PHONE_HREF = `tel:${PHONE_TEL}`;
 const PHONE_LABEL = '+359 882 797 806';
-const STUDIO_LOCATION = 'Sofia, Bulgaria';
 
 function IntentArrow() {
   return (
@@ -32,64 +33,33 @@ const EASE = [0.25, 0.48, 0.35, 0.99] as const;
 
 const swapTransition = (reduce: boolean) =>
   reduce
-    ? { duration: 0.15 }
-    : { duration: 0.4, ease: EASE as [number, number, number, number] };
-
-function generalLineVariants(reduce: boolean) {
-  if (reduce) {
-    return { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.12 } } };
-  }
-  return {
-    hidden: { opacity: 0, y: 9 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.38, ease: EASE as [number, number, number, number] },
-    },
-  };
-}
+    ? { duration: 0.1 }
+    : { duration: 0.18, ease: EASE as [number, number, number, number] };
 
 function generalPanelVariants(reduce: boolean) {
   if (reduce) {
     return {
       hidden: { opacity: 0 },
       show: { opacity: 1, transition: { duration: 0.15 } },
-      exit: { opacity: 0, transition: { duration: 0.12 } },
+      exit: { opacity: 0, transition: { when: 'afterChildren' as const, duration: 0.1 } },
     };
   }
   return {
-    hidden: { opacity: 0, y: 12 },
+    hidden: { opacity: 0, y: 6 },
     show: {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.4,
+        duration: 0.2,
         ease: EASE as [number, number, number, number],
         when: 'beforeChildren' as const,
-        staggerChildren: 0.09,
-        delayChildren: 0.05,
+        delayChildren: 0,
       },
     },
     exit: {
       opacity: 0,
-      y: -8,
-      transition: { duration: 0.28, ease: EASE as [number, number, number, number] },
-    },
-  };
-}
-
-function generalEmailHeroVariants(reduce: boolean) {
-  if (reduce) {
-    return { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.12 } } };
-  }
-  return {
-    hidden: {},
-    show: {
-      transition: {
-        when: 'beforeChildren' as const,
-        staggerChildren: 0.1,
-        delayChildren: 0.02,
-      },
+      y: 0,
+      transition: { when: 'afterChildren' as const, duration: 0.12, ease: EASE as [number, number, number, number] },
     },
   };
 }
@@ -102,12 +72,10 @@ export function ContactPage() {
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const gLine = generalLineVariants(!!reduce);
   const gPanel = generalPanelVariants(!!reduce);
-  const gEmailHero = generalEmailHeroVariants(!!reduce);
-  const skyV = contactPageSky(!!reduce);
+  const skyV = contactPageSky(!!reduce, true);
   const mistV = contactPageMist(!!reduce);
-  const innerV = contactPageInner(!!reduce);
+  const innerV = contactPageInner(!!reduce, true);
 
   useLayoutEffect(() => {
     document.body.classList.add('contact-page-open');
@@ -222,9 +190,9 @@ export function ContactPage() {
   return (
     <div className="contact-page-3d-root">
       <motion.main
-        className={`contact-page contact-page--sky${sending ? ' contact-page--sending' : ''}${
-          success ? ' contact-page--success' : ''
-        }`}
+        className={`contact-page contact-page--sky${
+          sending ? ' contact-page--sending' : ''
+        }${success ? ' contact-page--success' : ''}`}
         role="main"
         aria-label="Contact Inkblot Studio"
         id="contact-page-root"
@@ -241,6 +209,7 @@ export function ContactPage() {
           animate="animate"
           exit="exit"
         />
+        <ContactPageBlooms />
         <motion.div
           className="contact-page__inner"
           variants={innerV}
@@ -248,50 +217,69 @@ export function ContactPage() {
           animate="animate"
         >
         <div className="contact-page__center">
-          <div className="contact-page__intro">
-            <h1
-              className="contact-page__hero contact-page__hero--ref"
-              id="contact-page-heading"
-            >
-              <span className="contact-page__hero-line">Say</span>
-              <span className="contact-page__hero-line">hello</span>
-            </h1>
-            <p className="contact-page__kicker contact-page__kicker--sheet">
-              We look forward to hearing from you
-            </p>
-            <div
-              className="contact-page__intents"
-              role="group"
-              aria-label="How would you like to reach us?"
-            >
-              <button
-                type="button"
-                className="contact-page__intent"
-                aria-pressed={intent === 'work'}
-                onClick={() => {
-                  playClick();
-                  setIntent('work');
-                }}
-                onPointerEnter={playHover}
+          <div className={`contact-page__canvas contact-page__canvas--${intent}`}>
+            <div className="contact-page__ribbon">
+              <h1
+                className="contact-page__hero contact-page__hero--ref"
+                id="contact-page-heading"
               >
-                New business <IntentArrow />
-              </button>
-              <button
-                type="button"
-                className="contact-page__intent"
-                aria-pressed={intent === 'general'}
-                onClick={() => {
-                  playClick();
-                  setIntent('general');
-                }}
-                onPointerEnter={playHover}
+                <span className="contact-page__hero-line">Say hello</span>
+              </h1>
+              <div
+                className="contact-page__intents"
+                role="group"
+                aria-label="How would you like to reach us?"
               >
-                General <IntentArrow />
-              </button>
+                <button
+                  type="button"
+                  className="contact-page__intent"
+                  aria-pressed={intent === 'work'}
+                  onClick={() => {
+                    playClick();
+                    setIntent('work');
+                  }}
+                  onPointerEnter={playHover}
+                >
+                  <span className="contact-page__intent-content">
+                    <IntentArrow />
+                    <span className="contact-page__intent-text">New business</span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="contact-page__intent"
+                  aria-pressed={intent === 'general'}
+                  onClick={() => {
+                    playClick();
+                    setIntent('general');
+                  }}
+                  onPointerEnter={playHover}
+                >
+                  <span className="contact-page__intent-content">
+                    <IntentArrow />
+                    <span className="contact-page__intent-text">General</span>
+                  </span>
+                </button>
+              </div>
             </div>
-          </div>
 
-            <div className="contact-page__swap-shell">
+            <div className={`contact-page__split contact-page__split--${intent}`}>
+              {intent === 'general' ? (
+                <p className="contact-page__kicker contact-page__kicker--sheet">
+                  <span className="contact-page__kicker-line">We look forward</span>
+                  <span className="contact-page__kicker-line">to hearing from you</span>
+                </p>
+              ) : null}
+              <div
+                className={
+                  intent === 'work' ? 'contact-page__work-stage' : 'contact-page__split-bay--general'
+                }
+              >
+                <div
+                  className={`contact-page__swap-shell${
+                    intent === 'work' ? ' contact-page__swap-shell--work' : ''
+                  }`}
+                >
               <AnimatePresence mode="wait" initial={false}>
                 {intent === 'work' ? (
                   <motion.div
@@ -299,9 +287,9 @@ export function ContactPage() {
                     className="contact-page__swap-panel contact-page__swap-panel--work"
                     role="region"
                     aria-label="New business form"
-                    initial={reduce ? false : { opacity: 0, y: 14 }}
+                    initial={reduce ? false : { opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={reduce ? undefined : { opacity: 0, y: -10 }}
+                    exit={reduce ? undefined : { opacity: 0, y: 0 }}
                     transition={swapTransition(!!reduce)}
                   >
                     <div className="contact-page__views">
@@ -406,49 +394,24 @@ export function ContactPage() {
                     animate="show"
                     exit="exit"
                   >
-                    <motion.div className="contact-page__email-hero" variants={gEmailHero} initial="hidden" animate="show">
-                      <motion.a
-                        className="contact-page__email-link"
-                        href={MAIL_GENERAL_HREF}
-                        variants={gLine}
-                      >
-                        {MAIL}
-                      </motion.a>
-                      <motion.div className="contact-page__offices" role="list" variants={gLine}>
-                        <div className="contact-page__office" role="listitem">
-                          <p className="contact-page__office-label">Studio</p>
-                          <p className="contact-page__office-line">{STUDIO_LOCATION}</p>
-                        </div>
-                        <div className="contact-page__office" role="listitem">
-                          <p className="contact-page__office-label">Call</p>
-                          <a className="contact-page__office-line contact-page__office-line--link" href={PHONE_HREF}>
-                            {PHONE_LABEL}
-                          </a>
-                        </div>
-                      </motion.div>
-                      <motion.p className="contact-page__email-lede" variants={gLine}>
-                        For day-to-day questions, partnerships, and everything that isn’t a new brief.
-                      </motion.p>
-                      <motion.p className="contact-page__email-hint" variants={gLine}>
-                        <button
-                          type="button"
-                          className="contact-page__link-as-btn"
-                          onClick={() => {
-                            playClick();
-                            setIntent('work');
-                          }}
-                          onPointerEnter={playHover}
-                        >
-                          Have a new project? Use the form
-                        </button>
-                      </motion.p>
-                    </motion.div>
+                    <ContactDipLinks
+                      reduce={!!reduce}
+                      email={MAIL}
+                      emailHref={MAIL_GENERAL_HREF}
+                      emailClassName="contact-page__email-link"
+                      phone={PHONE_LABEL}
+                      phoneHref={PHONE_HREF}
+                      phoneClassName="contact-page__office-line contact-page__office-line--link contact-page__general-tel"
+                    />
                   </motion.div>
                 )}
               </AnimatePresence>
+                </div>
+              </div>
             </div>
+          </div>
         </div>
-      </motion.div>
+        </motion.div>
       </motion.main>
     </div>
   );

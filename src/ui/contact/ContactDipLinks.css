@@ -1,0 +1,22 @@
+/* Mirror water-dip glyph behaviour; warm ink, no cyan surface. */
+.contact-page__email-hero {
+  perspective: 880px;
+  transform-style: preserve-3d;
+}
+
+.contact-dip-glyph {
+  display: inline-block;
+  transform-origin: 50% 100%;
+  backface-visibility: hidden;
+  white-space: pre;
+}
+
+.contact-dip-glyph--space {
+  min-width: 0.2em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contact-dip-glyph {
+    filter: none !important;
+  }
+}

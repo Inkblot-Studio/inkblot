@@ -21,12 +21,13 @@
   z-index: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: flex-start;
   padding: max(0.5rem, env(safe-area-inset-top)) max(0.5rem, env(safe-area-inset-right))
     max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left));
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
+  min-height: 0;
+  height: 100%;
   background: color-mix(in srgb, var(--cp-paper) 98%, #fff 2%);
   color: var(--cp-ink);
   box-sizing: border-box;
@@ -51,45 +52,183 @@
   opacity: 0.9;
 }
 
+/* Fills the overlay; no page scroll here — kicker/ribbon stay under nav; only the work stage may scroll. */
 .contact-page__inner {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: min(26rem, 90vw);
+  max-width: min(56rem, 94vw);
   margin: 0 auto;
-  padding: max(1.5rem, env(safe-area-inset-top)) max(1.1rem, env(safe-area-inset-right))
-    max(1.75rem, env(safe-area-inset-bottom)) max(1.1rem, env(safe-area-inset-left));
+  padding: max(1.5rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right))
+    max(1.75rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  justify-content: center;
-  min-height: 100dvh;
-  min-height: 100vh;
-  text-align: center;
+  justify-content: flex-start;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  text-align: start;
+  padding-top: max(7.75rem, calc(env(safe-area-inset-top, 0px) + 5.65rem));
+  padding-bottom: max(1.75rem, env(safe-area-inset-bottom));
+  padding-left: max(1.25rem, env(safe-area-inset-left));
+  padding-right: max(1.25rem, env(safe-area-inset-right));
 }
 
-/* Single column: one optical center, reference-style breathing room */
 .contact-page__center {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
-.contact-page__intro {
+/* Hero + intent pills: fixed in flow — does not re-center with the form below */
+.contact-page__canvas {
   display: flex;
   flex-direction: column;
-  align-items: center;
   width: 100%;
-  margin: 0 0 1.5rem;
+  max-width: min(40rem, 90vw);
+  margin: 0 auto;
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  gap: 30px;
+  align-items: stretch;
+  text-align: start;
+}
+
+.contact-page__ribbon {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: calc(clamp(0.4rem, 1.4vw, 1rem) + 10px);
+  row-gap: 0;
+  align-items: start;
+  flex: 0 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.contact-page__ribbon .contact-page__hero {
+  grid-column: 1;
+  grid-row: 1;
+  max-width: none;
+  width: 100%;
+  text-align: right;
+  justify-self: stretch;
+  margin: 0;
+  align-self: end;
+}
+
+.contact-page__ribbon .contact-page__intents {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: stretch;
+  margin: 0;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  align-self: end;
+}
+
+/* General: 2×2 under ribbon — kicker | email+phone. Work: single column, form in scrollable stage. */
+.contact-page__split--general {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: calc(clamp(0.4rem, 1.4vw, 1rem) + 10px);
+  row-gap: 0;
+  align-items: start;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.contact-page__split--general .contact-page__kicker {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+  max-width: none;
+  width: 100%;
+  text-align: right;
+  justify-self: stretch;
+  align-self: start;
+}
+
+.contact-page__split-bay--general {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  align-self: start;
+  justify-self: stretch;
+  box-sizing: border-box;
+}
+
+.contact-page__split-bay--general .contact-page__swap-shell {
+  width: 100%;
+  max-width: 26rem;
+  margin: 0;
+  align-self: start;
+  justify-self: stretch;
+  box-sizing: border-box;
+}
+
+.contact-page__split--work {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  align-items: stretch;
+}
+
+.contact-page__work-stage {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.contact-page__work-stage .contact-page__swap-shell--work {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.contact-page__canvas .contact-page__swap-panel {
+  max-width: 100%;
+  width: 100%;
 }
 
 .contact-page__hero {
   margin: 0 0 0.15rem;
-  max-width: 14ch;
-  align-self: center;
-  text-align: center;
 }
 
 /* Reference: light italic serif for “Say hello” */
@@ -102,7 +241,8 @@
 .contact-page__hero-line {
   display: block;
   font-family: 'Fraunces', Georgia, serif;
-  font-size: clamp(2.4rem, 6.5vw, 3.2rem);
+  /* ~+30% vs prior scale */
+  font-size: clamp(3.12rem, 8.45vw, 4.16rem);
   font-weight: 300;
   letter-spacing: -0.02em;
   line-height: 1.04;
@@ -112,8 +252,6 @@
 .contact-page__kicker {
   margin: 0.65rem 0 0;
   max-width: 32ch;
-  margin-left: auto;
-  margin-right: auto;
   font-family: 'IBM Plex Mono', 'JetBrains Mono', monospace;
   font-size: 0.52rem;
   font-weight: 500;
@@ -121,7 +259,7 @@
   text-transform: uppercase;
   color: var(--cp-ink-muted);
   line-height: 1.55;
-  text-align: center;
+  text-align: start;
 }
 
 /* All-caps kicker, tight like reference */
@@ -134,21 +272,29 @@
   color: var(--cp-ink-muted);
 }
 
+.contact-page__split--general .contact-page__kicker--sheet {
+  max-width: none;
+}
+
+.contact-page__kicker-line {
+  display: block;
+}
+
 .contact-page__intents {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem 0.55rem;
-  margin: 1.1rem 0 0;
-  justify-content: center;
+  margin: 0;
+  justify-content: flex-start;
   width: 100%;
   max-width: 22rem;
 }
 
-/* Pill toggles, reference: solid selected vs hairline unselected */
+/* Pill toggles, reference: solid selected vs hairline unselected; ↘ leads label */
 .contact-page__intent {
   display: inline-flex;
   align-items: center;
-  gap: 0.2em;
+  justify-content: center;
   font-family: 'Outfit', system-ui, sans-serif;
   font-size: 0.68rem;
   font-weight: 500;
@@ -158,7 +304,7 @@
   background: transparent;
   border: 1px solid var(--cp-ink);
   border-radius: 999px;
-  padding: 0.55rem 1.1rem 0.52rem 1.05rem;
+  padding: 0.55rem 1.1rem 0.52rem 0.88rem;
   cursor: pointer;
   transition:
     background 0.3s var(--cp-spring),
@@ -167,10 +313,28 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.contact-page__intent-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  transition: transform 0.3s var(--cp-spring);
+  will-change: transform;
+}
+
+.contact-page__intent:hover .contact-page__intent-content,
+.contact-page__intent:focus-visible .contact-page__intent-content {
+  transform: translate3d(0.28rem, 0, 0);
+}
+
+.contact-page__intent-text {
+  line-height: 1.1;
+}
+
 .contact-page__intent-arrow {
+  flex-shrink: 0;
   font-size: 0.75em;
   line-height: 1;
-  opacity: 0.7;
+  opacity: 0.75;
   transform: translate(0, 0.04em);
 }
 
@@ -187,26 +351,27 @@
   box-shadow: none;
 }
 
-/* Subtle press feedback; pairs with optional UI SFX when music is on */
-.contact-page__intent,
-.contact-page__submit,
-.contact-page__link-as-btn {
+/* Press feedback on pill chrome only so it doesn’t fight the inner nudge */
+.contact-page__submit {
   transition: transform 0.2s var(--cp-spring, cubic-bezier(0.25, 0.48, 0.35, 0.99));
 }
 
-.contact-page__intent:active:not(:disabled),
 .contact-page__submit:active:not(:disabled) {
   transform: scale(0.987);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .contact-page__intent,
-  .contact-page__submit,
-  .contact-page__link-as-btn {
+  .contact-page__submit {
     transition: none;
   }
-  .contact-page__intent:active:not(:disabled),
   .contact-page__submit:active:not(:disabled) {
+    transform: none;
+  }
+  .contact-page__intent-content {
+    transition: none;
+  }
+  .contact-page__intent:hover .contact-page__intent-content,
+  .contact-page__intent:focus-visible .contact-page__intent-content {
     transform: none;
   }
 }
@@ -218,27 +383,118 @@
   }
 }
 
-/* Content-sized shell — avoid a huge empty frame under the intro */
+@media (max-width: 720px) {
+  .contact-page__inner {
+    max-width: min(26rem, 92vw);
+  }
+
+  .contact-page__canvas {
+    max-width: 100%;
+  }
+
+  .contact-page__ribbon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  .contact-page__ribbon .contact-page__hero {
+    text-align: center;
+    max-width: none;
+  }
+
+  .contact-page__split--general {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .contact-page__split--general .contact-page__kicker {
+    max-width: 32ch;
+    margin: 0.5rem 0 0;
+    text-align: center;
+    width: 100%;
+  }
+
+  .contact-page__ribbon .contact-page__intents {
+    margin: 0.4rem 0 0;
+    justify-content: center;
+  }
+
+  .contact-page__split-bay--general {
+    width: 100%;
+    max-width: 24rem;
+    margin: 0.9rem 0 0;
+    align-items: center;
+  }
+
+  .contact-page__split-bay--general .contact-page__swap-shell {
+    width: 100%;
+    max-width: 24rem;
+    margin: 0;
+    align-items: center;
+  }
+
+  .contact-page__swap-panel {
+    align-items: center;
+    align-self: center;
+  }
+
+  .contact-page__email-hero {
+    text-align: center;
+    align-items: center;
+  }
+
+  .contact-page__email-link {
+    text-align: center;
+  }
+
+  .contact-page__general-tel {
+    text-align: center;
+  }
+
+  .contact-page__submit {
+    align-self: center;
+  }
+
+  .contact-page__split--work {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .contact-page__work-stage,
+  .contact-page__work-stage .contact-page__swap-shell--work {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+
+/* Right column: form / email — left-aligned in column, under pills (reference) */
 .contact-page__swap-shell {
   position: relative;
   width: 100%;
-  max-width: 24rem;
-  margin: 0 auto;
+  max-width: 26rem;
+  margin: 0;
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: visible;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .contact-page__swap-panel {
   width: 100%;
+  max-width: 26rem;
   display: flex;
   flex-direction: column;
   flex: 0 1 auto;
   min-height: 0;
-  align-items: center;
-  align-self: center;
+  align-items: flex-start;
+  align-self: stretch;
 }
 
 .contact-page__swap-panel--work {
@@ -250,48 +506,16 @@
   flex: 1 1 auto;
 }
 
-/* General: lead email, centered band */
+/* General: lead email, editorial (matches split layout) */
 .contact-page__email-hero {
-  text-align: center;
+  text-align: start;
   max-width: 100%;
   width: 100%;
   margin: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.2rem 0;
-}
-
-.contact-page__offices {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem 1.25rem;
-  margin: 0.5rem 0 0;
-  width: 100%;
-  max-width: 22rem;
-  justify-items: center;
-  text-align: center;
-}
-
-.contact-page__office {
-  text-align: center;
-}
-
-@media (max-width: 480px) {
-  .contact-page__offices {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-  }
-}
-
-.contact-page__office-label {
-  font-family: 'IBM Plex Mono', 'JetBrains Mono', monospace;
-  font-size: 0.5rem;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--cp-muted);
-  margin: 0 0 0.35rem;
+  align-items: flex-start;
+  gap: 0.35rem 0;
 }
 
 .contact-page__office-line {
@@ -319,10 +543,14 @@ a.contact-page__office-line--link:focus-visible {
   outline: none;
 }
 
+.contact-page__general-tel {
+  margin-top: 0.4rem;
+}
+
 .contact-page__email-link {
   display: block;
   font-family: 'Outfit', system-ui, sans-serif;
-  font-size: clamp(1.5rem, 4.2vw, 2.2rem);
+  font-size: clamp(1.4rem, 2.4vw, 2.1rem);
   font-weight: 500;
   letter-spacing: 0.01em;
   color: var(--cp-ink);
@@ -331,55 +559,13 @@ a.contact-page__office-line--link:focus-visible {
   border-bottom: none;
   word-break: break-word;
   transition: color 0.25s var(--cp-spring);
-  text-align: center;
+  text-align: start;
   max-width: 100%;
 }
 
 .contact-page__email-link:hover,
 .contact-page__email-link:focus-visible {
   color: var(--cp-ink-muted);
-  outline: none;
-}
-
-.contact-page__email-lede {
-  margin: 0.85rem 0 0;
-  font-family: 'Outfit', system-ui, sans-serif;
-  font-size: 0.8rem;
-  line-height: 1.5;
-  color: var(--cp-ink-muted);
-  max-width: 34ch;
-  text-align: center;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.contact-page__email-hint {
-  margin: 1.1rem 0 0;
-  text-align: center;
-  width: 100%;
-}
-
-.contact-page__link-as-btn {
-  display: inline;
-  padding: 0;
-  font-family: 'IBM Plex Mono', 'JetBrains Mono', monospace;
-  font-size: 0.58rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--cp-muted);
-  background: none;
-  border: none;
-  border-bottom: 1px solid var(--cp-line);
-  cursor: pointer;
-  transition: color 0.25s var(--cp-spring), border-color 0.25s var(--cp-spring);
-  -webkit-tap-highlight-color: transparent;
-}
-
-.contact-page__link-as-btn:hover,
-.contact-page__link-as-btn:focus-visible {
-  color: var(--cp-ink);
-  border-bottom-color: var(--cp-ink);
   outline: none;
 }
 
@@ -460,7 +646,7 @@ a.contact-page__office-line--link:focus-visible {
 }
 
 .contact-page__submit {
-  align-self: center;
+  align-self: flex-end;
   margin-top: 0.4rem;
   font-family: 'IBM Plex Mono', 'JetBrains Mono', monospace;
   font-size: 0.62rem;
@@ -609,6 +795,13 @@ body.inkblot-light-chrome .audio-dock {
 body.contact-page-open .custom-scroll-rail,
 body.inkblot-light-chrome .custom-scroll-rail {
   z-index: 50;
+}
+
+/* New-business form scrolls inside .contact-page__work-stage — hide the site’s fixed scroll rail (double bar) */
+body.contact-page-open .custom-scroll-rail {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 body.contact-page-open .site-drawer,

@@ -1300,21 +1300,74 @@
         pointer-events: none;
         margin: 0;
         padding: 0;
-        font-family: 'Fraunces', Georgia, serif;
-        font-size: clamp(0.65rem, 1.1vw, 0.86rem);
-        font-weight: 300;
-        font-style: italic;
-        font-feature-settings: 'ss01' 1;
-        letter-spacing: 0.2em;
-        text-transform: uppercase;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.65rem;
         text-align: center;
-        white-space: nowrap;
-        color: color-mix(in srgb, #f4efe8 90%, #d4c4b0 10%);
-        text-shadow:
-          0 0 24px color-mix(in srgb, #9a8a78 24%, transparent),
-          0 0 1px color-mix(in srgb, #020617 55%, transparent);
         opacity: clamp(0, calc((1 - var(--scroll-raw, 0) * 22) * 0.7), 1);
         transition: opacity 0.55s ease;
+        --scroll-hint-ice: #e8f4f8;
+        --scroll-hint-ink: rgba(248, 244, 238, 0.94);
+      }
+
+      .scroll-hint__mouse {
+        position: relative;
+        display: block;
+        width: 1.45rem;
+        height: 2.4rem;
+        box-sizing: border-box;
+        border: 1.5px solid var(--scroll-hint-ink);
+        border-radius: 999px;
+        box-shadow:
+          0 0 0 0.5px color-mix(in srgb, #22d3ee 25%, transparent),
+          0 0 18px color-mix(in srgb, #22d3ee 12%, transparent);
+      }
+
+      .scroll-hint__wheel {
+        position: absolute;
+        left: 50%;
+        top: 0.42rem;
+        width: 0.2rem;
+        height: 0.2rem;
+        margin-left: -0.1rem;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--scroll-hint-ice) 55%, rgba(30, 40, 55, 0.35) 45%);
+        box-shadow: 0 0 0 0.5px color-mix(in srgb, #fff 20%, transparent);
+        animation: scroll-hint-wheel 1.45s ease-in-out infinite;
+      }
+
+      @keyframes scroll-hint-wheel {
+        0%,
+        100% {
+          transform: translateY(0);
+          opacity: 0.5;
+        }
+        50% {
+          transform: translateY(0.38rem);
+          opacity: 0.95;
+        }
+      }
+
+      .scroll-hint__label {
+        font-family: 'Syne', system-ui, sans-serif;
+        font-size: clamp(0.58rem, 0.9vw, 0.72rem);
+        font-weight: 500;
+        letter-spacing: 0.32em;
+        text-transform: uppercase;
+        line-height: 1;
+        color: var(--scroll-hint-ink);
+        text-shadow:
+          0.4px 0 0 color-mix(in srgb, #60a5fa 35%, transparent),
+          -0.4px 0 0 color-mix(in srgb, #f87171 28%, transparent),
+          0 0 20px color-mix(in srgb, #22d3ee 22%, transparent),
+          0 0 1px color-mix(in srgb, #0f172a 50%, transparent);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .scroll-hint__wheel {
+          animation: none;
+        }
       }
 
       @media (max-width: 480px) {
@@ -1342,11 +1395,18 @@
         .scroll-hint {
           bottom: max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem));
           max-width: min(96vw, 19rem);
-          white-space: normal;
-          line-height: 1.35;
-          font-size: clamp(0.6rem, 3.1vw, 0.78rem);
-          letter-spacing: 0.14em;
+          gap: 0.5rem;
           padding: 0 0.5rem;
+        }
+
+        .scroll-hint__label {
+          font-size: clamp(0.52rem, 2.8vw, 0.66rem);
+          letter-spacing: 0.22em;
+        }
+
+        .scroll-hint__mouse {
+          width: 1.35rem;
+          height: 2.1rem;
         }
 
         .brand-row {
@@ -1882,15 +1942,15 @@
         font-feature-settings: 'tnum' 1;
       }
 
-      /* Right column: nudged in from the panel edge; links are max-content (no full-width row stretch). */
+      /* Right column: fixed width so hover (arrow) never changes the flex footprint — avoids jitter vs LinkedIn. */
       .site-drawer__socials {
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
         gap: 0.42rem;
         text-align: left;
         flex: 0 0 auto;
-        width: max-content;
+        width: min(12.5rem, 100%);
         min-width: 0;
         max-width: 12.5rem;
         margin: 0 1.5rem 0 0;
@@ -1901,15 +1961,11 @@
 
       .site-drawer__socials a {
         position: relative;
-        display: inline-flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: flex-start;
-        flex-wrap: nowrap;
-        width: max-content;
+        display: block;
+        width: 100%;
         max-width: 100%;
-        /* Keeps the label from jumping; arrow reveals inside this band on the right. */
-        padding-right: 0.85em;
+        /* Gutter for absolute arrow: width stays constant, no flex reflow. */
+        padding: 0 0 0 1.05em;
         font-family: 'IBM Plex Mono', 'JetBrains Mono', monospace;
         font-size: 0.62rem;
         font-weight: 500;
@@ -1917,33 +1973,41 @@
         text-transform: uppercase;
         text-decoration: none;
         color: #7a726a;
-        transition: color 0.2s var(--sd-spring);
+        line-height: 1.45;
+        transition:
+          color 0.2s var(--sd-spring),
+          transform 0.35s var(--sd-spring-draw);
         box-sizing: border-box;
         min-width: 0;
+        transform: translate3d(0, 0, 0);
       }
 
-      .site-drawer__socials a::after {
+      .site-drawer__socials a::before {
         content: '\21B3';
         position: absolute;
-        right: 0;
+        left: 0;
         top: 50%;
-        width: 0.75em;
+        width: 0.88em;
         line-height: 1;
-        font: inherit;
+        font-family: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+        font-size: 0.72em;
+        font-weight: 500;
         color: #1a1812;
         letter-spacing: 0.02em;
         text-transform: none;
-        text-align: right;
+        text-align: left;
         white-space: nowrap;
         pointer-events: none;
         opacity: 0;
-        transform: translate3d(0.32em, -50%, 0);
-        transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        transform: translate3d(-0.2em, -50%, 0);
+        transition:
+          opacity 0.3s var(--sd-spring),
+          transform 0.35s var(--sd-spring-draw);
       }
 
-      .site-drawer__socials a:hover::after,
-      .site-drawer__socials a:focus-visible::after {
-        opacity: 0.92;
+      .site-drawer__socials a:hover::before,
+      .site-drawer__socials a:focus-visible::before {
+        opacity: 0.9;
         transform: translate3d(0, -50%, 0);
       }
 
@@ -1951,6 +2015,7 @@
       .site-drawer__socials a:focus-visible {
         color: #3d3832;
         outline: none;
+        transform: translate3d(0.22rem, 0, 0);
       }
 
       @media (max-width: 520px) {
@@ -2003,8 +2068,16 @@
             margin 0.12s ease,
             transform 0.12s ease;
         }
-        .site-drawer__socials a::after {
-          transition: opacity 0.1s ease, transform 0.1s ease;
+        .site-drawer__socials a,
+        .site-drawer__socials a::before {
+          transition:
+            color 0.1s ease,
+            opacity 0.1s ease,
+            transform 0.1s ease;
+        }
+        .site-drawer__socials a:hover,
+        .site-drawer__socials a:focus-visible {
+          transform: none;
         }
       }
     </style>
@@ -2032,7 +2105,12 @@
       </section>
     </div>
 
-    <p class="scroll-hint" aria-hidden="true">Scroll down</p>
+    <div class="scroll-hint" aria-hidden="true">
+      <span class="scroll-hint__mouse">
+        <span class="scroll-hint__wheel"></span>
+      </span>
+      <span class="scroll-hint__label">Scroll</span>
+    </div>
 
     <div
       id="cookie-consent"

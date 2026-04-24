@@ -3,13 +3,31 @@ import type { Variants } from 'framer-motion';
 const EASE_UP = [0.16, 1, 0.3, 1] as const;
 const EASE_DOWN = [0.4, 0, 0.2, 1] as const;
 
-/** Full overlay: minimal fade + nudge (reference: still sheet, not a flying panel). */
-export function contactPageSky(reduce: boolean): Variants {
+/**
+ * Full overlay: minimal fade; optional nudge. When `anchorToTop`, no `y` on `main` —
+ * transforms here stack with top-aligned content and read as clipped under the z-50 nav.
+ */
+export function contactPageSky(reduce: boolean, anchorToTop = false): Variants {
   if (reduce) {
     return {
       initial: { opacity: 0 },
       animate: { opacity: 1, transition: { duration: 0.2 } },
       exit: { opacity: 0, transition: { duration: 0.2 } },
+    };
+  }
+  if (anchorToTop) {
+    return {
+      initial: { opacity: 0, y: 0 },
+      animate: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.24, ease: EASE_UP },
+      },
+      exit: {
+        opacity: 0,
+        y: 0,
+        transition: { duration: 0.2, ease: EASE_DOWN },
+      },
     };
   }
   return {
@@ -33,17 +51,30 @@ export function contactPageMist(reduce: boolean): Variants {
   }
   return {
     initial: { opacity: 0 },
-    animate: { opacity: 0.2, transition: { delay: 0.05, duration: 0.5, ease: EASE_UP } },
-    exit: { opacity: 0, transition: { duration: 0.3, ease: EASE_DOWN } },
+    animate: { opacity: 0.2, transition: { delay: 0, duration: 0.28, ease: EASE_UP } },
+    exit: { opacity: 0, transition: { duration: 0.2, ease: EASE_DOWN } },
   };
 }
 
-/** Second “layer” — content eases in after the shell (no separate exit: parent `main` descends with everything). */
-export function contactPageInner(reduce: boolean): Variants {
+/**
+ * Second “layer” — content eases in after the shell.
+ * When `anchorToTop`, skip vertical parallax so the new-business layout doesn’t read as floating.
+ */
+export function contactPageInner(reduce: boolean, anchorToTop = false): Variants {
   if (reduce) {
     return {
       initial: { opacity: 0 },
       animate: { opacity: 1, transition: { duration: 0.2 } },
+    };
+  }
+  if (anchorToTop) {
+    return {
+      initial: { opacity: 0, y: 0 },
+      animate: {
+        opacity: 1,
+        y: 0,
+        transition: { delay: 0.01, duration: 0.22, ease: EASE_UP },
+      },
     };
   }
   return {
