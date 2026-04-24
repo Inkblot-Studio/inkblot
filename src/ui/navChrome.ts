@@ -2,6 +2,7 @@ import { leaveContactToJourneySection, openContactFromNav } from '@/navigation/c
 import type { AudioSystem } from '@/systems/audioSystem';
 import { registerAudioForReactUI } from '@/ui/audioUIFeedbackRegistry';
 import type { ScrollSystem } from '@/systems/scrollSystem';
+import { playAudioDockUiSound } from '@/ui/audioUiSounds';
 import { initDrawerSlotTitles } from '@/ui/drawerSlotTitles';
 import { navScrollToJourneyIndex, navScrollToWork } from '@/ui/portfolioNavigator';
 
@@ -282,6 +283,7 @@ function updateMiniPlayerOpenA11y(): void {
 function openAudioLiquid(): void {
   document.getElementById('audio-dock')?.classList.add('audio-dock--liquid');
   audioDockLiquidOpen = true;
+  playAudioDockUiSound('open');
   updateMiniPlayerOpenA11y();
   clearAudioAutoClose();
   audioAutoCloseTimer = window.setTimeout(() => {
@@ -290,6 +292,7 @@ function openAudioLiquid(): void {
 }
 
 function closeAudioLiquid(): void {
+  playAudioDockUiSound('close');
   document.getElementById('audio-dock')?.classList.remove('audio-dock--liquid');
   audioDockLiquidOpen = false;
   clearAudioAutoClose();
