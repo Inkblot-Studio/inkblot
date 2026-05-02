@@ -1,164 +1,167 @@
-/* Root fills the #journey-work panel absolutely */
+/* Work section root: full panel, cream solid background, slides over flower via --journey-work-slide */
 #journey-work-root {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
-.work-slab-grid {
+.work-section {
+  --work-paper: #f0ede8;
+  --work-ink: #1a1812;
+  --work-ink-soft: #6b645c;
+
   position: absolute;
   inset: 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-}
-
-/* ── Slab shell ─────────────────────────────────── */
-.work-slab {
-  position: relative;
+  background: var(--work-paper);
+  color: var(--work-ink);
   overflow: hidden;
-  cursor: pointer;
+  font-family: 'Outfit', system-ui, sans-serif;
 }
 
-/* Logo-faithful triangle clip-paths:
-   --r: polygon matches "points='0,0 80,40 0,80'" (right-pointing)
-   --l: mirror flip (left-pointing) */
-.work-slab--r {
-  clip-path: polygon(0 0, 100% 50%, 0 100%);
+/* ── Title bar (pinned at top) ─────────────────── */
+.work-section__title {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: clamp(2rem, 7vh, 4.5rem) 0 clamp(1rem, 3vh, 2rem);
+  text-align: center;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    var(--work-paper) 0%,
+    var(--work-paper) 70%,
+    rgba(240, 237, 232, 0.85) 90%,
+    rgba(240, 237, 232, 0) 100%
+  );
 }
 
-.work-slab--l {
-  clip-path: polygon(100% 0, 0 50%, 100% 100%);
+.work-section__kicker {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--work-ink);
+  margin: 0 0 0.6rem;
+  opacity: 0.72;
 }
 
-/* ── Background layer ───────────────────────────── */
-.work-slab__bg {
+.work-section__heading {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: clamp(1.85rem, 3.6vw, 3rem);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--work-ink);
+  margin: 0;
+}
+
+/* ── WebGL canvas (behind scroll content, in front of bg) ── */
+.work-section__canvas {
   position: absolute;
   inset: 0;
-  background: linear-gradient(148deg, var(--slab-bg), var(--slab-accent));
-  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform;
+  z-index: 1;
+  pointer-events: none;
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
-.work-slab:hover .work-slab__bg {
-  transform: scale(1.05);
-}
-
-/* ── Content safe-zone ──────────────────────────── */
-/* Keeps text/media away from the apex (narrow end of the triangle).
-   Right-pointing triangle: safe zone is in the left ~50%.
-   Left-pointing triangle:  safe zone is in the right ~50%. */
-.work-slab__content {
+/* ── Scroll container (sits over canvas, transparent, captures scroll) ── */
+.work-section__scroll {
   position: absolute;
-  top: 12%;
-  bottom: 12%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.75rem;
+  inset: 0;
+  z-index: 2;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* Smooth momentum on touch */
+  -webkit-overflow-scrolling: touch;
+  /* Important: bg transparent so canvas behind shows through */
+  background: transparent;
+}
+
+.work-section__scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.work-section__inner {
+  position: relative;
+  width: 100%;
   pointer-events: none;
 }
 
-.work-slab__content--r {
-  left: 7%;
-  width: 42%;
-}
-
-.work-slab__content--l {
-  right: 7%;
-  width: 42%;
-  align-items: flex-end;
-  text-align: right;
-}
-
-/* ── Media placeholder ──────────────────────────── */
-.work-slab__media {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  border-radius: 7px;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--slab-accent) 55%, rgba(255, 255, 255, 0.18) 45%),
-    color-mix(in srgb, var(--slab-accent) 85%, rgba(0, 0, 0, 0.2) 15%)
-  );
+/* ── Project name overlays — appear in the gap when slab is active ── */
+.work-section__name {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translate(-50%, -50%);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-shadow:
-    0 2px 12px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  transition: box-shadow 0.45s ease;
-  overflow: hidden;
+  gap: 0.5rem;
+  text-align: center;
+  white-space: nowrap;
+  opacity: 0;
+  transition:
+    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+  will-change: opacity, transform;
 }
 
-.work-slab:hover .work-slab__media {
-  box-shadow:
-    0 8px 36px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+.work-section__name--active {
+  opacity: 1;
+  transform: translate(-50%, calc(-50% + 0.25rem));
 }
 
-.work-slab__media-label {
+.work-section__name-text {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: clamp(0.95rem, 1.35vw, 1.2rem);
+  letter-spacing: -0.005em;
+  color: var(--work-ink);
+  margin: 0;
+  line-height: 1;
+}
+
+.work-section__name-meta {
   font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
-  font-size: 0.52rem;
+  font-size: 0.58rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.25);
-  user-select: none;
-}
-
-/* ── Text ───────────────────────────────────────── */
-.work-slab__name {
-  font-family: 'Outfit', system-ui, sans-serif;
-  font-weight: 600;
-  font-size: clamp(0.78rem, 1.3vw, 1.05rem);
-  color: rgba(255, 255, 255, 0.88);
+  color: var(--work-ink-soft);
   margin: 0;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
+  line-height: 1;
 }
 
-.work-slab__role {
+/* ── Bottom hint ── */
+.work-section__hint {
+  position: absolute;
+  bottom: clamp(1.25rem, 3vh, 2.25rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 11;
   font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
-  font-size: clamp(0.48rem, 0.65vw, 0.58rem);
-  letter-spacing: 0.18em;
+  font-size: 0.5rem;
+  letter-spacing: 0.36em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.38);
-  margin: 0;
+  color: var(--work-ink-soft);
+  opacity: 0.6;
+  pointer-events: none;
 }
 
-/* ── Hover text reveal ──────────────────────────── */
-.work-slab:hover .work-slab__name {
-  color: rgba(255, 255, 255, 0.98);
-}
-
-.work-slab:hover .work-slab__role {
-  color: rgba(255, 255, 255, 0.58);
-}
-
-/* ── Mobile: collapse to 2×2 but reduce clip sharpness ─ */
-@media (max-width: 540px) {
-  .work-slab__content--r {
-    left: 6%;
-    width: 46%;
-  }
-
-  .work-slab__content--l {
-    right: 6%;
-    width: 46%;
-  }
-
-  .work-slab__name {
-    font-size: clamp(0.7rem, 3.2vw, 0.95rem);
-  }
-
-  .work-slab__role {
-    font-size: clamp(0.42rem, 1.6vw, 0.54rem);
-  }
-}
-
-/* ── Reduced motion ─────────────────────────────── */
+/* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
-  .work-slab__bg {
-    transition: none;
+  .work-section__name,
+  .work-section__name--active {
+    transition: opacity 0.2s ease;
+    transform: translate(-50%, -50%);
   }
 }

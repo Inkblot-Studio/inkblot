@@ -1148,6 +1148,8 @@
         transform: translateY(calc((1 - var(--journey-work-slide, 0)) * 105vh));
         pointer-events: none;
         will-change: transform, opacity;
+        transition: none;
+        overflow: hidden;
       }
 
       body[data-journey-section='1'] #journey-work.journey-panel {
