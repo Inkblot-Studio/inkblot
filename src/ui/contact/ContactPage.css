@@ -969,8 +969,8 @@ body.contact-page-open #canvas-container,
 body.contact-page-open .journey-scene-frame,
 body.inkblot-light-chrome #canvas-container,
 body.inkblot-light-chrome .journey-scene-frame {
-  transition: opacity 0.5s var(--cp-spring);
-  opacity: 0.9;
+  transition: opacity 0.4s ease;
+  opacity: 0.6;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import type { ReactElement } from 'react';
 
 import './ContactPageBlooms.css';
@@ -34,14 +35,22 @@ function MiniBloom({ className, seed }: { className: string; seed: number }): Re
   );
 }
 
-export function ContactPageBlooms(): ReactElement {
+const EASE_UP = [0.16, 1, 0.3, 1] as const;
+
+export function ContactPageBlooms({ reduce }: { reduce: boolean }): ReactElement {
   return (
-    <div className="contact-page__bloom-scene" aria-hidden="true">
+    <motion.div
+      className="contact-page__bloom-scene"
+      aria-hidden="true"
+      initial={reduce ? false : { opacity: 0 }}
+      animate={{ opacity: 1, transition: { delay: 0.18, duration: 0.8, ease: EASE_UP } }}
+      exit={reduce ? undefined : { opacity: 0, transition: { duration: 0.2 } }}
+    >
       <MiniBloom className="contact-page__bloom contact-page__bloom--a" seed={1} />
       <MiniBloom className="contact-page__bloom contact-page__bloom--b" seed={7} />
       <MiniBloom className="contact-page__bloom contact-page__bloom--c" seed={13} />
       <MiniBloom className="contact-page__bloom contact-page__bloom--d" seed={3} />
       <MiniBloom className="contact-page__bloom contact-page__bloom--e" seed={21} />
-    </div>
+    </motion.div>
   );
 }

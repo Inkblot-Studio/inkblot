@@ -209,12 +209,13 @@ export function ContactPage() {
           animate="animate"
           exit="exit"
         />
-        <ContactPageBlooms />
+        <ContactPageBlooms reduce={!!reduce} />
         <motion.div
           className="contact-page__inner"
           variants={innerV}
           initial="initial"
           animate="animate"
+          exit="exit"
         >
         <div className="contact-page__center">
           <div className={`contact-page__canvas contact-page__canvas--${intent}`}>
