@@ -3,6 +3,7 @@ import {
   getJourneySectionWeights,
   journeyCumulativeStops,
 } from '@/journey/sectionMap';
+import { exitWorkLock, isWorkLocked } from '@/navigation/workSectionLock';
 
 type ScrollToProgress = (progress01: number) => void;
 
@@ -23,13 +24,22 @@ function progressAtSectionStart(section: number, inset = 0.035): number {
   return clamp((stops[s] ?? 0) + inset, 0, 0.996);
 }
 
-/** Top nav: journey start (bloom / index). */
+/** Top nav: journey start (bloom / index). Releases work lock if engaged. */
 export function navScrollToJourneyIndex(): void {
+  if (isWorkLocked()) {
+    exitWorkLock();
+    return;
+  }
   scrollImpl?.(0.02);
 }
 
-/** Top nav: work / portfolio section. */
+/** Top nav: work / portfolio section. While locked, smooth-scroll internal tiles to top. */
 export function navScrollToWork(): void {
+  if (isWorkLocked()) {
+    const inner = document.querySelector<HTMLElement>('.work-section__scroll');
+    if (inner) inner.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
   scrollImpl?.(progressAtSectionStart(1, 0.05));
 }
 
@@ -50,6 +60,14 @@ export function handlePortfolioChatQuery(raw: string): { reply: string; scrolled
     };
   }
 
+  const exitLockIfFlowerNav = (): boolean => {
+    if (isWorkLocked()) {
+      exitWorkLock();
+      return true;
+    }
+    return false;
+  };
+
   if (/^(hi|hello|hey)\b/.test(q)) {
     return {
       reply:
@@ -67,16 +85,25 @@ export function handlePortfolioChatQuery(raw: string): { reply: string; scrolled
   }
 
   if (/\b(top|home|start over)\b/.test(q)) {
+    if (exitLockIfFlowerNav()) {
+      return { reply: 'Back to the bloom…', scrolled: true };
+    }
     scrollImpl(0.02);
     return { reply: 'Back to the top of the journey.', scrolled: true };
   }
 
   if (/\b(flower|bloom|opening)\b/.test(q)) {
+    if (exitLockIfFlowerNav()) {
+      return { reply: 'Moving to the bloom…', scrolled: true };
+    }
     scrollImpl(progressAtSectionStart(0, 0.02));
     return { reply: 'Moving to the bloom…', scrolled: true };
   }
 
   if (/\b(work|portfolio|partners?|clients?|carousel|logo|glass|hero)\b/.test(q)) {
+    if (isWorkLocked()) {
+      return { reply: 'You’re already in the work carousel — scroll the panel.', scrolled: false };
+    }
     scrollImpl(progressAtSectionStart(1, 0.05));
     return { reply: 'Opening the work section…', scrolled: true };
   }

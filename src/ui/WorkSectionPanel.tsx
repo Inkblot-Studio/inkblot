@@ -1,19 +1,22 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { WORK_PROJECTS } from '@/data/workSectionContent';
-import { WorkSectionScene } from '@/ui/WorkSectionScene';
+import { WorkSectionScene, workSectionSlabUnitVhFrac } from '@/ui/WorkSectionScene';
 
 import './WorkSection.css';
 
-const ACTIVE_DISTANCE_THRESHOLD = 0.55;
+const SLAB_UNIT_VH_FRAC = workSectionSlabUnitVhFrac();
+const NAME_GUTTER_RATIO = 0.52;
+const INNER_TAIL_VH = 130;
+
+/** Min scroll track so friction scroll / laptops always have room to scrub tiles. */
+const MIN_INNER_EXTRA_VH = 120;
 
 export function WorkSectionPanel() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<WorkSectionScene | null>(null);
-  const [activeIdx, setActiveIdx] = useState<number>(0);
 
-  // Mount Three.js scene
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -40,55 +43,50 @@ export function WorkSectionPanel() {
     };
   }, []);
 
-  // Drive scroll progress + active slab
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const scrollEl = containerRef.current;
+    if (!scrollEl) return;
 
     let raf = 0;
-    let lastIdx = 0;
 
-    const onScroll = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const sy = container.scrollTop;
-        const sm = container.scrollHeight - container.clientHeight;
-        const t = sm > 0 ? sy / sm : 0;
-        sceneRef.current?.setScrollProgress(t);
-
-        const slabUnitPx = container.clientHeight * 0.5;
-        if (slabUnitPx <= 0) return;
-
-        const rawIdx = sy / slabUnitPx;
-        const nearest = Math.round(rawIdx);
-        const dist = Math.abs(rawIdx - nearest);
-
-        let nextIdx: number;
-        if (
-          nearest >= 0 &&
-          nearest < WORK_PROJECTS.length &&
-          dist < ACTIVE_DISTANCE_THRESHOLD
-        ) {
-          nextIdx = nearest;
-        } else {
-          nextIdx = -1;
-        }
-
-        if (nextIdx !== lastIdx) {
-          lastIdx = nextIdx;
-          setActiveIdx(nextIdx);
-        }
+    const updateNameStyles = (rawIdx: number) => {
+      const nodes = scrollEl.querySelectorAll<HTMLElement>('[data-work-name]');
+      nodes.forEach((el) => {
+        const idx = Number.parseInt(el.dataset.workSlot ?? '-1', 10);
+        if (idx < 0) return;
+        const d = Math.abs(rawIdx - (idx + NAME_GUTTER_RATIO));
+        let o = Math.max(0, 1 - d * 2.85);
+        o = Math.min(1, o * o);
+        if (rawIdx <= 0.06 && idx > 1) o = Math.min(o, 0.12);
+        el.style.setProperty('--name-a', String(o));
+        el.style.setProperty('--name-lift', `${(1 - o) * 18}px`);
       });
     };
 
-    container.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
+    const tick = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const sy = scrollEl.scrollTop;
+        const sm = scrollEl.scrollHeight - scrollEl.clientHeight;
+        const t = sm > 0 ? sy / sm : 0;
+        sceneRef.current?.setScrollProgress(t);
+
+        const slabUnitPx = scrollEl.clientHeight * SLAB_UNIT_VH_FRAC;
+        if (slabUnitPx > 4) updateNameStyles(sy / slabUnitPx);
+      });
+    };
+
+    scrollEl.addEventListener('scroll', tick, { passive: true });
+    tick();
 
     return () => {
       cancelAnimationFrame(raf);
-      container.removeEventListener('scroll', onScroll);
+      scrollEl.removeEventListener('scroll', tick);
     };
   }, []);
+
+  const stripeVh =
+    WORK_PROJECTS.length * (SLAB_UNIT_VH_FRAC * 100) + INNER_TAIL_VH + MIN_INNER_EXTRA_VH;
 
   return (
     <div className="work-section">
@@ -104,19 +102,24 @@ export function WorkSectionPanel() {
         className="work-section__scroll"
         role="region"
         aria-label="Selected projects"
+        tabIndex={0}
       >
-        <div
-          className="work-section__inner"
-          style={{ height: `${WORK_PROJECTS.length * 50 + 100}vh` }}
-        >
+        <div className="work-section__inner" style={{ height: `${stripeVh}vh`, minHeight: '140vh' }}>
           {WORK_PROJECTS.map((project, i) => {
-            const isActive = i === activeIdx;
+            const dirClass =
+              i % 2 === 0
+                ? 'work-section__name--from-right'
+                : 'work-section__name--from-left';
             const meta = [project.role, project.year].filter(Boolean).join(' · ');
             return (
               <div
                 key={project.id}
-                className={`work-section__name${isActive ? ' work-section__name--active' : ''}`}
-                style={{ top: `calc(${i * 50}vh + 75vh)` }}
+                data-work-slot={i}
+                data-work-name
+                className={`work-section__name ${dirClass}`}
+                style={{
+                  top: `calc(${(i + NAME_GUTTER_RATIO) * (SLAB_UNIT_VH_FRAC * 100)}vh)`,
+                }}
               >
                 <p className="work-section__name-text">{project.name}</p>
                 {meta && <p className="work-section__name-meta">{meta}</p>}

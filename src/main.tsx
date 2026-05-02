@@ -1,6 +1,9 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
+/** Light-sheet chrome vars + nav/audio overrides (`body.inkblot-light-chrome`) — loaded here so bloom journey/work uses them without opening /contact first. */
+import '@/ui/contact/ContactPage.css';
+
 import { App } from './App';
 import { bootstrapConsentAnalytics } from './ui/cookieConsent';
 import { LoadingScreen } from './ui/loading/LoadingScreen';

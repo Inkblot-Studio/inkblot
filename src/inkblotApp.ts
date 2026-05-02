@@ -43,6 +43,11 @@ import { registerAudioForReactUI } from '@/ui/audioUIFeedbackRegistry';
 import { initNavChrome, updateNavChrome } from '@/ui/navChrome';
 import { clearPortfolioScrollNavigator, registerPortfolioScrollNavigator } from '@/ui/portfolioNavigator';
 import {
+  autoEnterWorkLock,
+  isWorkLockBusy,
+  workLockState,
+} from '@/navigation/workSectionLock';
+import {
   computeJourneySectionTransitionFx,
   journeyCumulativeStops,
   resolveJourney,
@@ -432,11 +437,17 @@ export class Inkblot {
         String(Math.min(1, Math.pow(edge * 2.4, 1.15))),
       );
 
+      const baseBloom =
+        journey.section === 0 ? bloomScrollDrive(journey.localT) : 1;
+      const postEnv = this.takePostLoadIntroEnvelope(performance.now());
+      this.animationSystem.setPostLoadCameraEnvelop(journey.section === 0 ? postEnv : 0);
+      const introBoost = journey.section === 0 ? postEnv * 0.34 : 0;
+      const mergedBloom = Math.min(1, baseBloom + introBoost);
+
       let workOpacity = 0;
       if (journey.section === 1) {
         workOpacity = smoothstep(0, 0.22, journey.localT);
       }
-      document.documentElement.style.setProperty('--journey-work-ui', String(workOpacity));
 
       let workSlide = 0;
       if (journey.section === 0) {
@@ -444,14 +455,35 @@ export class Inkblot {
       } else {
         workSlide = 0.5 + smoothstep(0, 0.2, journey.localT) * 0.5;
       }
+
+      const lockState = workLockState();
+      if (lockState === 'locked' || lockState === 'entering') {
+        workSlide = 1;
+      }
+
+      document.documentElement.style.setProperty('--journey-work-ui', String(workOpacity));
       document.documentElement.style.setProperty('--journey-work-slide', String(workSlide));
 
-      const baseBloom =
-        journey.section === 0 ? bloomScrollDrive(journey.localT) : 1;
-      const postEnv = this.takePostLoadIntroEnvelope(performance.now());
-      this.animationSystem.setPostLoadCameraEnvelop(journey.section === 0 ? postEnv : 0);
-      const introBoost = journey.section === 0 ? postEnv * 0.34 : 0;
-      const mergedBloom = Math.min(1, baseBloom + introBoost);
+      document.body.classList.toggle(
+        'journey-work-pointer',
+        journey.section === 1 || workSlide >= 0.38 || lockState !== 'idle',
+      );
+
+      document.body.classList.toggle(
+        'inkblot-light-chrome',
+        journey.section === 1 || workSlide >= 0.42 || lockState !== 'idle',
+      );
+
+      if (
+        lockState === 'idle' &&
+        !isWorkLockBusy() &&
+        journey.section === 0 &&
+        journey.localT > 0.93 &&
+        mergedBloom >= 0.935
+      ) {
+        autoEnterWorkLock();
+      }
+
       document.documentElement.style.setProperty('--bloom-scroll', String(mergedBloom));
 
       this.animationSystem.setJourneyFlower({
@@ -506,6 +538,7 @@ export class Inkblot {
       document.documentElement.style.removeProperty('--journey-edge');
       this.prevJourneySection = null;
       delete document.body.dataset.journeySection;
+      document.body.classList.remove('journey-work-pointer', 'inkblot-light-chrome');
       syncJourneyFog(this.scene.instance, -1);
       this.citronBloomComponent?.setBloomFromScroll(this.scrollSystem.progress);
       document.documentElement.style.setProperty(

@@ -815,7 +815,8 @@ body.inkblot-light-chrome .custom-scroll-rail {
 }
 
 /* New-business form scrolls inside .contact-page__work-stage — hide the site’s fixed scroll rail (double bar) */
-body.contact-page-open .custom-scroll-rail {
+body.contact-page-open .custom-scroll-rail,
+body.inkblot-light-chrome .custom-scroll-rail {
   opacity: 0;
   pointer-events: none;
   visibility: hidden;

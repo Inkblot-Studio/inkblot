@@ -249,11 +249,13 @@
       }
 
       /* Light contact sheet: dark wordmark + dark mark; white glyph would disappear */
-      body.contact-page-open .brand-row__mark--light {
+      body.contact-page-open .brand-row__mark--light,
+      body.inkblot-light-chrome .brand-row__mark--light {
         display: none;
       }
 
-      body.contact-page-open .brand-row__mark--dark {
+      body.contact-page-open .brand-row__mark--dark,
+      body.inkblot-light-chrome .brand-row__mark--dark {
         display: block;
       }
 
@@ -1150,6 +1152,21 @@
         will-change: transform, opacity;
         transition: none;
         overflow: hidden;
+      }
+
+      body.journey-work-pointer #journey-work.journey-panel {
+        pointer-events: auto;
+      }
+
+      body.work-section-locking #journey-work.journey-panel {
+        opacity: 1 !important;
+        transition:
+          opacity 0.72s cubic-bezier(0.19, 1, 0.22, 1),
+          transform 0.92s cubic-bezier(0.19, 1, 0.22, 1) !important;
+      }
+
+      body.work-section-locked #journey-work.journey-panel {
+        opacity: 1 !important;
       }
 
       body[data-journey-section='1'] #journey-work.journey-panel {

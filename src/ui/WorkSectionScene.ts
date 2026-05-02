@@ -5,8 +5,11 @@ import type { WorkProject } from '@/data/workSectionContent';
 const FOV = 35;
 const CAMERA_Z = 5;
 
-const SLAB_H_FRAC = 0.36;
-const SLAB_GAP_FRAC = 0.14;
+/** Viewport band used to size logo bbox (square) in world units. */
+const SLAB_SIDE_FRAC = 0.5;
+const SLAB_GAP_FRAC = 0.075;
+/** SVG stacking step 60 ÷ bbox height 80 — matches `public/inkblotstudio_logo.svg`. */
+const LOGO_VERTICAL_STEP = 60 / 80;
 
 const VERT_SHADER = /* glsl */ `
   uniform float uBendLineY;
@@ -39,6 +42,7 @@ const VERT_SHADER = /* glsl */ `
   }
 `;
 
+/** Clips like SVG `#tri` points="0,0 80,40 0,80". Y_SVG grows downward (= 1 − vUv.y). */
 const FRAG_SHADER = /* glsl */ `
   uniform sampler2D uTex;
   uniform float uHasTex;
@@ -71,21 +75,15 @@ const FRAG_SHADER = /* glsl */ `
   }
 
   void main() {
-    float topEdge, bottomEdge;
-    if (uDir < 0.5) {
-      topEdge = 1.0 - 0.5 * vUv.x;
-      bottomEdge = 0.5 * vUv.x;
-    } else {
-      topEdge = 0.5 + 0.5 * vUv.x;
-      bottomEdge = 0.5 - 0.5 * vUv.x;
-    }
+    float xMir = mix(1.0 - vUv.x, vUv.x, step(0.5, uDir));
+    float ys = 1.0 - vUv.y;
 
-    float aa = fwidth(vUv.y) * 1.4;
-    float topAlpha = smoothstep(topEdge + aa, topEdge - aa, vUv.y);
-    float bottomAlpha = smoothstep(bottomEdge - aa, bottomEdge + aa, vUv.y);
-    float triAlpha = topAlpha * bottomAlpha;
+    float aa = max(max(fwidth(xMir), fwidth(ys)), 0.004) * 1.65;
+    float lo = smoothstep(0.5 * xMir - aa, 0.5 * xMir + aa, ys);
+    float hi = 1.0 - smoothstep((1.0 - 0.5 * xMir) - aa, (1.0 - 0.5 * xMir) + aa, ys);
+    float triAlpha = clamp(lo * hi, 0.0, 1.0);
 
-    if (triAlpha < 0.001) discard;
+    if (triAlpha < 0.0015) discard;
 
     vec3 color;
     if (uHasTex > 0.5) {
@@ -94,10 +92,10 @@ const FRAG_SHADER = /* glsl */ `
       color = procedural(vUv, uAccent, uTime);
     }
 
-    float bendDim = 1.0 - vBendT * 0.45;
+    float bendDim = 1.0 - vBendT * 0.32;
     color *= bendDim;
 
-    float bendFade = 1.0 - smoothstep(0.72, 1.0, vBendT);
+    float bendFade = mix(1.0, smoothstep(0.7, 0.99, 1.0 - vBendT), 0.18);
 
     vec2 vp = vUv - 0.5;
     float vig = 1.0 - dot(vp, vp) * 0.45;
@@ -117,6 +115,11 @@ interface SlabRecord {
 export interface WorkSectionSceneOptions {
   canvas: HTMLCanvasElement;
   projects: readonly WorkProject[];
+}
+
+/** ~Stripe height vs viewport height for aligning DOM wheel travel with stacked logo tiles. */
+export function workSectionSlabUnitVhFrac(): number {
+  return SLAB_SIDE_FRAC * LOGO_VERTICAL_STEP + SLAB_GAP_FRAC;
 }
 
 export class WorkSectionScene {
@@ -168,17 +171,18 @@ export class WorkSectionScene {
   }
 
   private buildSlabs(projects: readonly WorkProject[], aspect: number): void {
-    const slabH = this.viewportHWorld * SLAB_H_FRAC;
     const slabGap = this.viewportHWorld * SLAB_GAP_FRAC;
-    const slabUnit = slabH + slabGap;
+    const viewportWWorld = this.viewportHWorld * aspect;
+
+    let side =
+      Math.min(viewportWWorld * 0.84, Math.max(viewportWWorld * 0.36, this.viewportHWorld * SLAB_SIDE_FRAC));
+
+    const slabUnit = side * LOGO_VERTICAL_STEP + slabGap;
     this.slabUnitWorld = slabUnit;
 
-    const viewportW = this.viewportHWorld * aspect;
-    const slabW = Math.min(slabH * 2.4, viewportW * 0.84);
-
     projects.forEach((project, i) => {
-      const isRight = i % 2 === 0;
-      const geo = new THREE.PlaneGeometry(slabW, slabH, 96, 48);
+      const pointsRight = i % 2 === 0;
+      const geo = new THREE.PlaneGeometry(side, side, 80, 80);
 
       const accent = new THREE.Color(project.accent ?? '#777777');
       const uniforms = {
@@ -186,7 +190,7 @@ export class WorkSectionScene {
         uHasTex: { value: 0.0 },
         uAccent: { value: accent },
         uTime: this.uTime,
-        uDir: { value: isRight ? 0 : 1 },
+        uDir: { value: pointsRight ? 1.0 : 0.0 },
         uOpacity: { value: 1.0 },
         uBendLineY: this.uBendLineY,
         uBendRange: this.uBendRange,
@@ -241,15 +245,11 @@ export class WorkSectionScene {
     uniforms.uHasTex.value = 1.0;
 
     void video.play().catch(() => {
-      /* autoplay may be blocked; user interaction will start it */
+      /* autoplay may be blocked */
     });
     return video;
   }
 
-  /**
-   * scrollT: 0..1 — normalized internal scroll progress.
-   * 0 = first slab centered. 1 = last slab gone past top.
-   */
   setScrollProgress(scrollT: number): void {
     const total = this.projectsCount * this.slabUnitWorld;
     this.group.position.y = scrollT * total;
@@ -261,15 +261,20 @@ export class WorkSectionScene {
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
 
-    // Re-fit slab widths to the new aspect (height stays constant in world units)
     const aspect = w / h;
-    const viewportW = this.viewportHWorld * aspect;
-    const slabH = this.viewportHWorld * SLAB_H_FRAC;
-    const slabW = Math.min(slabH * 2.4, viewportW * 0.84);
+    const viewportWWorld = this.viewportHWorld * aspect;
 
-    this.slabs.forEach((s) => {
-      const targetScaleX = slabW / (s.geometry.parameters.width || 1);
-      s.mesh.scale.x = targetScaleX;
+    let side =
+      Math.min(viewportWWorld * 0.84, Math.max(viewportWWorld * 0.36, this.viewportHWorld * SLAB_SIDE_FRAC));
+    const slabGap = this.viewportHWorld * SLAB_GAP_FRAC;
+    const newUnit = side * LOGO_VERTICAL_STEP + slabGap;
+    this.slabUnitWorld = newUnit;
+
+    this.slabs.forEach((s, i) => {
+      const geo = s.geometry as THREE.PlaneGeometry;
+      const gx = geo.parameters.width || 1;
+      s.mesh.scale.set(side / gx, side / gx, 1);
+      s.mesh.position.y = -i * newUnit;
     });
   }
 
