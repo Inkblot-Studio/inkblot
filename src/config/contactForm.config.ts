@@ -1,11 +1,10 @@
 /**
- * Contact form: flip `LOCAL_DRY_RUN` to `true` when tuning UI/UX so submissions are
- * validated locally and the success state runs with **no** Web3Forms call.
- * Set back to `false` before production deploy (or set `VITE_CONTACT_FORM_DRY_RUN=false` in .env).
+ * Contact form dry-run is opt-in only. Set `VITE_CONTACT_FORM_DRY_RUN=true`
+ * locally when tuning UI/UX so submissions validate without calling Web3Forms.
  *
  * `VITE_CONTACT_FORM_DRY_RUN` in .env, when set, overrides this file (`"true"` / `"false"`).
  */
-const LOCAL_DRY_RUN = true;
+const LOCAL_DRY_RUN = false;
 
 const env = import.meta.env.VITE_CONTACT_FORM_DRY_RUN;
 export const contactFormDryRun: boolean =
