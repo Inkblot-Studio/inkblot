@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { closeContactAndRestore, restoreScrollAfterContact } from '@/navigation/contactRouteBridge';
 import { ContactDipLinks } from '@/ui/contact/ContactDipLinks';
 import { ContactPageBlooms } from '@/ui/contact/ContactPageBlooms';
-import { contactPageInner, contactPageMist, contactPageSky } from '@/ui/contact/contactPageMotion';
+import { contactPageCloudBurst, contactPageInner, contactPageMist, contactPageSky } from '@/ui/contact/contactPageMotion';
 import { useInterfaceAudio } from '@/ui/useInterfaceAudio';
 import { submitContact, resolveWeb3AccessKey } from '@/utils/contactFormSubmit';
 import {
@@ -76,15 +76,11 @@ export function ContactPage() {
   const skyV = contactPageSky(!!reduce, true);
   const mistV = contactPageMist(!!reduce);
   const innerV = contactPageInner(!!reduce, true);
+  const burstV = contactPageCloudBurst(!!reduce);
 
   useLayoutEffect(() => {
     document.body.classList.add('contact-page-open');
     document.body.style.overflow = 'hidden';
-    const y0 = window.scrollY || document.documentElement.scrollTop || 0;
-    if (y0 > 2) {
-      const instant = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      window.scrollTo({ top: 0, behavior: instant ? 'auto' : 'smooth' });
-    }
 
     return () => {
       document.body.classList.remove('contact-page-open');
@@ -205,6 +201,14 @@ export function ContactPage() {
           className="contact-page__mist"
           aria-hidden="true"
           variants={mistV}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+        />
+        <motion.div
+          className="contact-page__cloud-burst"
+          aria-hidden="true"
+          variants={burstV}
           initial="initial"
           animate="animate"
           exit="exit"

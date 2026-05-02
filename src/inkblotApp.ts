@@ -417,10 +417,12 @@ export class Inkblot {
 
       if (this.prevJourneySection !== null && this.prevJourneySection !== journey.section) {
         this.journeyTransitionPulse = 1;
-        document.body.classList.remove('journey-boundary-flash');
-        void document.body.offsetWidth;
-        document.body.classList.add('journey-boundary-flash');
-        window.setTimeout(() => document.body.classList.remove('journey-boundary-flash'), 700);
+        if (journey.section < this.prevJourneySection) {
+          document.body.classList.remove('journey-boundary-flash');
+          void document.body.offsetWidth;
+          document.body.classList.add('journey-boundary-flash');
+          window.setTimeout(() => document.body.classList.remove('journey-boundary-flash'), 700);
+        }
       }
       this.prevJourneySection = journey.section;
 
@@ -435,6 +437,14 @@ export class Inkblot {
         workOpacity = smoothstep(0, 0.22, journey.localT);
       }
       document.documentElement.style.setProperty('--journey-work-ui', String(workOpacity));
+
+      let workSlide = 0;
+      if (journey.section === 0) {
+        workSlide = smoothstep(0.75, 1.0, journey.localT) * 0.5;
+      } else {
+        workSlide = 0.5 + smoothstep(0, 0.2, journey.localT) * 0.5;
+      }
+      document.documentElement.style.setProperty('--journey-work-slide', String(workSlide));
 
       const baseBloom =
         journey.section === 0 ? bloomScrollDrive(journey.localT) : 1;
@@ -492,6 +502,7 @@ export class Inkblot {
       document.documentElement.style.removeProperty('--journey-section');
       document.documentElement.style.removeProperty('--journey-local');
       document.documentElement.style.removeProperty('--journey-work-ui');
+      document.documentElement.style.removeProperty('--journey-work-slide');
       document.documentElement.style.removeProperty('--journey-edge');
       this.prevJourneySection = null;
       delete document.body.dataset.journeySection;

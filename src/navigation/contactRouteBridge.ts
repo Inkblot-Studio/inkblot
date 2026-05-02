@@ -61,7 +61,8 @@ export function registerContactRouteNavigate(fn: NavigateFunction): void {
 }
 
 /**
- * Open `/contact` from the shell (top nav or drawer). Saves scroll, scrolls to top, navigates.
+ * Open `/contact` from the shell (top nav or drawer). Saves scroll position and navigates
+ * immediately -- no forced scroll to top, the overlay is fixed so scroll position is irrelevant.
  */
 export function openContactFromNav(): void {
   if (!boundNavigate) {
@@ -70,9 +71,7 @@ export function openContactFromNav(): void {
   }
   openedWithScrollCapture = true;
   savedJourneyScrollY = window.scrollY || document.documentElement.scrollTop || 0;
-  scrollDocumentToTopThen(() => {
-    boundNavigate!('/contact');
-  });
+  boundNavigate('/contact');
 }
 
 /**
