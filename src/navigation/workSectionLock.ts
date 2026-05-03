@@ -14,6 +14,7 @@ let wheelHandler: ((e: WheelEvent) => void) | null = null;
 let touchMoveHandler: ((e: TouchEvent) => void) | null = null;
 let keyHandler: ((e: KeyboardEvent) => void) | null = null;
 let lastExitMs = 0;
+let scrollAnimationToken = 0;
 
 const COOLDOWN_AFTER_EXIT_MS = 900;
 const ENTER_DURATION_MS = 850;
@@ -94,6 +95,7 @@ function smoothScrollTo(
   duration: number,
   onComplete?: () => void,
 ): void {
+  const token = ++scrollAnimationToken;
   const startY = window.scrollY;
   const dist = targetY - startY;
   if (Math.abs(dist) < 1) {
@@ -102,6 +104,7 @@ function smoothScrollTo(
   }
   const t0 = performance.now();
   const tick = () => {
+    if (token !== scrollAnimationToken) return;
     const elapsed = performance.now() - t0;
     const t = Math.min(1, elapsed / duration);
     const eased = easeInOutCubic(t);
@@ -111,7 +114,9 @@ function smoothScrollTo(
       requestAnimationFrame(tick);
     } else {
       window.scrollTo(0, targetY);
-      onComplete?.();
+      if (token === scrollAnimationToken) {
+        onComplete?.();
+      }
     }
   };
   requestAnimationFrame(tick);
