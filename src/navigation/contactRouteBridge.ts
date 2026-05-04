@@ -1,5 +1,6 @@
 import type { NavigateFunction } from 'react-router-dom';
 
+import { cancelWorkLock } from '@/navigation/workSectionLock';
 import { navScrollToJourneyIndex, navScrollToWork } from '@/ui/portfolioNavigator';
 
 let boundNavigate: NavigateFunction | null = null;
@@ -69,6 +70,7 @@ export function openContactFromNav(): void {
     window.location.assign('/contact');
     return;
   }
+  cancelWorkLock();
   openedWithScrollCapture = true;
   savedJourneyScrollY = window.scrollY || document.documentElement.scrollTop || 0;
   boundNavigate('/contact');

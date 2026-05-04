@@ -14,6 +14,7 @@ let wheelHandler: ((e: WheelEvent) => void) | null = null;
 let touchMoveHandler: ((e: TouchEvent) => void) | null = null;
 let keyHandler: ((e: KeyboardEvent) => void) | null = null;
 let lastExitMs = 0;
+let scrollTransitionId = 0;
 
 const COOLDOWN_AFTER_EXIT_MS = 900;
 const ENTER_DURATION_MS = 850;
@@ -48,7 +49,9 @@ export function autoEnterWorkLock(): void {
   installScrollLock();
 
   const targetY = progressToScrollY(ENTER_TARGET_PROGRESS);
-  smoothScrollTo(targetY, ENTER_DURATION_MS, () => {
+  const transitionId = startScrollTransition();
+  smoothScrollTo(transitionId, targetY, ENTER_DURATION_MS, () => {
+    if (transitionId !== scrollTransitionId || state !== 'entering') return;
     state = 'locked';
     document.body.classList.remove('work-section-locking');
     document.body.classList.add('work-section-locked');
@@ -73,11 +76,23 @@ export function exitWorkLock(): void {
   if (inner) inner.scrollTop = 0;
 
   const targetY = progressToScrollY(EXIT_TARGET_PROGRESS);
-  smoothScrollTo(targetY, EXIT_DURATION_MS, () => {
+  const transitionId = startScrollTransition();
+  smoothScrollTo(transitionId, targetY, EXIT_DURATION_MS, () => {
+    if (transitionId !== scrollTransitionId || state !== 'exiting') return;
     uninstallScrollLock();
     state = 'idle';
     lastExitMs = performance.now();
   });
+}
+
+/** Cancels any lock/transition without moving the page. Use before opening full-page overlays. */
+export function cancelWorkLock(): void {
+  if (state === 'idle') return;
+  startScrollTransition();
+  document.body.classList.remove('work-section-locking', 'work-section-locked');
+  uninstallScrollLock();
+  state = 'idle';
+  lastExitMs = performance.now();
 }
 
 function progressToScrollY(progress: number): number {
@@ -89,7 +104,13 @@ function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
+function startScrollTransition(): number {
+  scrollTransitionId += 1;
+  return scrollTransitionId;
+}
+
 function smoothScrollTo(
+  transitionId: number,
   targetY: number,
   duration: number,
   onComplete?: () => void,
@@ -97,11 +118,12 @@ function smoothScrollTo(
   const startY = window.scrollY;
   const dist = targetY - startY;
   if (Math.abs(dist) < 1) {
-    onComplete?.();
+    if (transitionId === scrollTransitionId) onComplete?.();
     return;
   }
   const t0 = performance.now();
   const tick = () => {
+    if (transitionId !== scrollTransitionId) return;
     const elapsed = performance.now() - t0;
     const t = Math.min(1, elapsed / duration);
     const eased = easeInOutCubic(t);
@@ -111,7 +133,7 @@ function smoothScrollTo(
       requestAnimationFrame(tick);
     } else {
       window.scrollTo(0, targetY);
-      onComplete?.();
+      if (transitionId === scrollTransitionId) onComplete?.();
     }
   };
   requestAnimationFrame(tick);
